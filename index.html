@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>48H Sicily — Lazare · Kélouan · Eugène</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,200;0,300;0,400;1,200;1,300;1,400&family=DM+Sans:wght@200;300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{
+  --g:#C8A96E;--gl:#E8D5A3;--gd:#8A6A38;
+  --a:#D4793A;--lv:#C44020;--lv2:#8B1A00;
+  --cr:#F5F0E8;--dk:#060504;
+  --bdr:rgba(200,169,110,.16);--bdh:rgba(200,169,110,.44);
+  --tm:rgba(245,240,232,.55);
+  --fs:'Cormorant Garamond',serif;
+  --fm:'DM Mono',monospace;
+  --fn:'DM Sans',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100vw;height:100vh;overflow:hidden;background:var(--dk)}
+body{font-family:var(--fn);cursor:none;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+
+/* ─── GRAIN / PARTICLES ─────────────────── */
+#grain{position:fixed;inset:0;pointer-events:none;z-index:850;opacity:.022;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:110px}
+#pcv{position:fixed;inset:0;pointer-events:none;z-index:3;opacity:.65}
+#prog{position:fixed;top:0;left:0;height:2px;z-index:999;
+  background:linear-gradient(90deg,var(--gd),var(--g),var(--gl));
+  transition:width .65s cubic-bezier(.16,1,.3,1);
+  box-shadow:0 0 20px rgba(200,169,110,.65)}
+
+/* ─── CHROME ────────────────────────────── */
+#brand{position:fixed;top:22px;left:30px;z-index:800;display:flex;align-items:center;gap:8px}
+#bdot{width:5px;height:5px;border-radius:50%;background:var(--g);animation:bp 2.8s ease infinite}
+@keyframes bp{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(200,169,110,.5)}55%{opacity:.3;box-shadow:0 0 0 5px transparent}}
+#btxt{font-family:var(--fm);font-size:.52rem;letter-spacing:.26em;color:rgba(200,169,110,.32);text-transform:uppercase}
+#ctr{position:fixed;top:22px;right:30px;z-index:800;font-family:var(--fm);font-size:.52rem;letter-spacing:.22em;color:rgba(200,169,110,.3)}
+#sname{position:fixed;top:22px;left:50%;transform:translateX(-50%);z-index:800;font-family:var(--fm);font-size:.5rem;letter-spacing:.24em;color:rgba(200,169,110,.25);text-transform:uppercase;white-space:nowrap}
+#hint{position:fixed;bottom:20px;right:30px;z-index:800;font-family:var(--fm);font-size:.46rem;letter-spacing:.18em;color:rgba(200,169,110,.2)}
+
+/* ─── CURSOR ────────────────────────────── */
+#cur{position:fixed;width:7px;height:7px;border-radius:50%;background:var(--g);pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:width .22s,height .22s;mix-blend-mode:difference}
+#cur2{position:fixed;width:28px;height:28px;border:1px solid rgba(200,169,110,.42);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%)}
+
+/* ─── NAV ───────────────────────────────── */
+#nav{position:fixed;inset:0;pointer-events:none;z-index:700;display:flex;align-items:center;justify-content:space-between;padding:0 16px}
+.nb{pointer-events:all;width:44px;height:44px;border:1px solid var(--bdr);background:rgba(6,5,4,.5);backdrop-filter:blur(18px);display:flex;align-items:center;justify-content:center;cursor:none;transition:border-color .3s,background .3s,transform .28s;border-radius:2px}
+.nb:hover{border-color:var(--g);background:rgba(200,169,110,.1);transform:scale(1.12)}
+.nb:disabled{opacity:.1;pointer-events:none}
+.nb svg{width:14px;height:14px;stroke:var(--g);stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+#dots{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:800;display:flex;gap:5px;align-items:center}
+.dot{height:1.5px;width:14px;background:rgba(200,169,110,.18);cursor:none;transition:width .45s cubic-bezier(.16,1,.3,1),background .4s;border-radius:1px}
+.dot.on{width:38px;background:var(--g);box-shadow:0 0 8px rgba(200,169,110,.45)}
+
+/* ─── SLIDE ENGINE ──────────────────────── */
+#deck{position:fixed;inset:0;z-index:1}
+.slide{position:absolute;inset:0;opacity:0;pointer-events:none;overflow:hidden}
+.slide.on{opacity:1;pointer-events:all;z-index:10}
+.slide.si{animation:sIn .88s cubic-bezier(.16,1,.3,1) both}
+.slide.so{animation:sOut .45s cubic-bezier(.55,0,.85,.55) both}
+@keyframes sIn{from{opacity:0;transform:translateY(22px) scale(1.016)}to{opacity:1;transform:none}}
+@keyframes sOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(-14px) scale(.984)}}
+.bg{position:absolute;inset:-6%;background-size:cover;background-position:center;will-change:transform}
+.ov-c{position:absolute;inset:0;background:radial-gradient(ellipse at 55% 45%,rgba(6,5,4,.2),rgba(6,5,4,.82) 100%)}
+.ov-b{position:absolute;inset:0;background:linear-gradient(to top,rgba(6,5,4,1) 0%,rgba(6,5,4,.42) 30%,transparent 62%)}
+.ov-l{position:absolute;inset:0;background:linear-gradient(110deg,rgba(6,5,4,.97) 0%,rgba(6,5,4,.9) 46%,rgba(6,5,4,.14) 70%,transparent 100%)}
+.ov-v{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 22%,rgba(6,5,4,.88) 100%)}
+.ov-lava{position:absolute;inset:0;background:linear-gradient(135deg,rgba(6,5,4,.97) 0%,rgba(100,22,0,.66) 52%,rgba(6,5,4,.9) 100%)}
+.ov-all{position:absolute;inset:0;background:rgba(6,5,4,.82)}
+.ov-top{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(6,5,4,.7) 0%,rgba(6,5,4,.1) 35%,rgba(6,5,4,.1) 65%,rgba(6,5,4,.82) 100%)}
+
+/* ─── ENTRANCES ─────────────────────────── */
+.up{opacity:0;transform:translateY(25px);transition:opacity .8s ease,transform .8s cubic-bezier(.16,1,.3,1)}
+.fr{opacity:0;transform:translateX(20px);transition:opacity .8s ease,transform .8s cubic-bezier(.16,1,.3,1)}
+.fl{opacity:0;transform:translateX(-20px);transition:opacity .8s ease,transform .8s cubic-bezier(.16,1,.3,1)}
+.sc{opacity:0;transform:scale(.92);transition:opacity .8s ease,transform .8s cubic-bezier(.16,1,.3,1)}
+.slide.on .up,.slide.on .fr,.slide.on .fl,.slide.on .sc{opacity:1;transform:none}
+.d1{transition-delay:.1s}.d2{transition-delay:.22s}.d3{transition-delay:.36s}
+.d4{transition-delay:.5s}.d5{transition-delay:.64s}.d6{transition-delay:.78s}
+.d7{transition-delay:.92s}.d8{transition-delay:1.06s}
+
+/* ─── ATOMS ─────────────────────────────── */
+.chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--bdr);color:var(--g);font-size:.57rem;letter-spacing:.24em;text-transform:uppercase;padding:5px 13px;background:rgba(200,169,110,.04);backdrop-filter:blur(10px)}
+.chip-lava{border-color:rgba(196,64,32,.42);color:var(--lv);background:rgba(120,24,0,.08);backdrop-filter:blur(10px);display:inline-flex;align-items:center;gap:8px;font-size:.57rem;letter-spacing:.24em;text-transform:uppercase;padding:5px 13px}
+.rule{display:block;width:46px;height:1px;background:var(--g)}
+.rule-lava{display:block;width:46px;height:1px;background:var(--lv)}
+.glass{background:rgba(6,5,4,.58);backdrop-filter:blur(20px);border:1px solid var(--bdr)}
+.glass-lava{background:rgba(40,8,0,.58);backdrop-filter:blur(20px);border:1px solid rgba(196,64,32,.24)}
+.gh{transition:border-color .3s,background .32s,transform .3s}
+.gh:hover{border-color:var(--bdh);background:rgba(200,169,110,.07);transform:translateY(-3px)}
+.stat{text-align:center;padding:14px 10px;border:1px solid var(--bdr);background:rgba(6,5,4,.52);backdrop-filter:blur(12px)}
+.stat-n{font-family:var(--fs);font-weight:200;color:var(--g);line-height:1}
+.stat-l{font-size:.5rem;letter-spacing:.16em;color:rgba(200,169,110,.45);text-transform:uppercase;margin-top:4px}
+.fact{padding:13px 15px;border:1px solid rgba(196,64,32,.2);background:rgba(50,10,0,.42);backdrop-filter:blur(14px)}
+.fact-n{font-family:var(--fs);font-size:1.82rem;font-weight:200;color:var(--a);line-height:1}
+.fact-l{font-size:.5rem;letter-spacing:.15em;color:rgba(212,121,58,.52);text-transform:uppercase;margin-top:4px}
+.pcard{border:1px solid var(--bdr);background:rgba(200,169,110,.04);padding:13px 20px;text-align:center;backdrop-filter:blur(10px);transition:border-color .3s,background .3s,transform .28s;cursor:none;min-width:148px}
+.pcard:hover{border-color:var(--g);background:rgba(200,169,110,.09);transform:translateY(-4px)}
+.dc{position:absolute;width:48px;height:48px;border-color:rgba(200,169,110,.1);border-style:solid;border-width:0}
+.dc.tl{top:16px;left:16px;border-top-width:1px;border-left-width:1px}
+.dc.tr{top:16px;right:16px;border-top-width:1px;border-right-width:1px}
+.dc.bl{bottom:16px;left:16px;border-bottom-width:1px;border-left-width:1px}
+.dc.br{bottom:16px;right:16px;border-bottom-width:1px;border-right-width:1px}
+.bignum{position:absolute;right:5%;bottom:-3%;font-family:var(--fs);font-size:clamp(6rem,14vw,13rem);font-weight:200;color:rgba(200,169,110,.038);line-height:1;pointer-events:none;user-select:none;letter-spacing:-.04em}
+
+/* ─── JOURNEY TIMELINE ──────────────────── */
+.jt{display:grid;grid-template-columns:1fr 2px 1fr;gap:0;align-items:center}
+.jl{text-align:right;padding-right:16px;padding-bottom:22px}
+.jr{padding-left:16px;padding-bottom:22px}
+.jm{display:flex;flex-direction:column;align-items:center}
+.jd{width:10px;height:10px;border-radius:50%;background:var(--g);flex-shrink:0;box-shadow:0 0 12px rgba(200,169,110,.6)}
+.jd.lv{background:var(--lv);box-shadow:0 0 14px rgba(196,64,32,.7)}
+.jln{width:2px;background:linear-gradient(to bottom,var(--g),rgba(200,169,110,.05));flex:1;min-height:34px}
+.jtime{font-family:var(--fm);font-size:.58rem;color:var(--g);letter-spacing:.12em}
+.jcity{font-family:var(--fs);font-size:1.08rem;font-weight:300;color:#fff;line-height:1.1;margin-bottom:3px}
+.jdet{font-size:.66rem;color:var(--tm);font-weight:300;line-height:1.4}
+.jprice{display:inline-flex;align-items:center;gap:4px;border:1px solid rgba(200,169,110,.25);padding:2px 9px;margin-top:4px}
+.jprice b{font-family:var(--fs);font-size:.92rem;color:var(--g);font-style:italic}
+
+/* ─── DAY TIMELINE ──────────────────────── */
+.tl{display:grid;grid-template-columns:54px 1px 1fr;gap:0 12px;align-items:start;padding-bottom:12px}
+.tl-t{font-family:var(--fm);font-size:.53rem;color:var(--g);letter-spacing:.1em;padding-top:2px;text-align:right}
+.tl-dw{display:flex;flex-direction:column;align-items:center}
+.tl-d{width:7px;height:7px;border-radius:50%;background:var(--g);flex-shrink:0;margin-top:1px;box-shadow:0 0 9px rgba(200,169,110,.55)}
+.tl-d.lv{background:var(--lv);box-shadow:0 0 9px rgba(196,64,32,.55)}
+.tl-v{flex:1;width:1px;background:linear-gradient(to bottom,var(--g),rgba(200,169,110,.04));min-height:32px}
+.tl:last-child .tl-v{display:none}
+.tl-h{font-weight:500;color:#fff;font-size:.77rem;margin-bottom:2px}
+.tl-b{font-size:.67rem;line-height:1.56;color:var(--tm);font-weight:300}
+
+/* ─── BUDGET TABLE ──────────────────────── */
+.brow{display:grid;grid-template-columns:1fr auto;gap:8px;padding:6px 0;border-bottom:1px solid rgba(200,169,110,.07);align-items:center}
+.brow:last-child{border-bottom:none}
+.brl{font-size:.67rem;color:var(--tm);font-weight:300}
+.brp{font-family:var(--fs);font-size:.9rem;color:#fff;font-style:italic}
+.btot{display:grid;grid-template-columns:1fr auto;gap:8px;padding:11px 0;align-items:center;border-top:1px solid rgba(200,169,110,.28);margin-top:6px}
+.btot-l{font-family:var(--fm);font-size:.55rem;letter-spacing:.17em;color:var(--g);text-transform:uppercase}
+.btot-p{font-family:var(--fs);font-size:1.65rem;color:var(--g);font-style:italic;font-weight:200}
+
+/* ─── BARS ──────────────────────────────── */
+.vbar{height:3px;background:linear-gradient(90deg,var(--lv),var(--a),var(--g));border-radius:2px;transition:width 1.5s cubic-bezier(.16,1,.3,1);width:0}
+.slide.on .vbar{width:var(--w)}
+
+/* ─── FOOD / PHOTO GRIDS ────────────────── */
+.food{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(200,169,110,.07)}
+.food:last-child{border-bottom:none}
+.photo-grid{display:grid;gap:5px}
+.photo-cell{background-size:cover;background-position:center;border:1px solid rgba(200,169,110,.1);position:relative;overflow:hidden;transition:transform .4s ease}
+.photo-cell:hover{transform:scale(1.03);z-index:2}
+.photo-cell .cap{position:absolute;bottom:0;left:0;right:0;padding:4px 8px;background:linear-gradient(to top,rgba(6,5,4,.88),transparent);font-family:var(--fm);font-size:.4rem;letter-spacing:.14em;color:var(--g);text-transform:uppercase}
+
+/* ─── QUOTE ─────────────────────────────── */
+.qline{display:flex;align-items:center;gap:12px}
+.qdash{width:20px;height:1px;background:var(--g);flex-shrink:0}
+.qtxt{font-family:var(--fs);font-style:italic;font-size:.82rem;color:rgba(200,169,110,.5);line-height:1.5}
+
+/* ─── 3D MAP ─────────────────────────────── */
+#c3d{position:absolute;inset:0;width:100%;height:100%}
+.map-ui{position:absolute;inset:0;pointer-events:none;z-index:5}
+
+/* ─── LAVA / FX ─────────────────────────── */
+@keyframes lglow{0%,100%{opacity:.4;filter:blur(45px)}50%{opacity:.75;filter:blur(65px)}}
+.lglow{animation:lglow 4.5s ease infinite}
+@keyframes floatanim{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.fl-anim{animation:floatanim 5s ease infinite}
+@keyframes tspin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.trn{animation:tspin 55s linear infinite;transform-origin:center}
+@keyframes aglow{0%,100%{opacity:.35}50%{opacity:.65}}
+.aglow{animation:aglow 5.5s ease infinite}
+.catbar{height:100%;width:0;border-radius:1px;transition:width 1.5s ease}
+</style>
+</head>
+<body>
+<canvas id="pcv"></canvas>
+<div id="grain"></div>
+<div id="prog"></div>
+<div id="cur"></div>
+<div id="cur2"></div>
+<div id="brand"><div id="bdot"></div><span id="btxt">English Oral · Group Project 2026</span></div>
+<div id="ctr">01 / 12</div>
+<div id="sname">Title</div>
+<div id="hint">← → Space</div>
+<div id="nav">
+  <button class="nb" id="pB" disabled aria-label="Previous"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+  <button class="nb" id="nB" aria-label="Next"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+</div>
+<div id="dots"></div>
+<div id="deck">
+
+<!-- ═══ SLIDE 01 · TITLE ═══ -->
+<div class="slide on" data-i="0" data-name="48 Hours in Sicily">
+  <!-- Crystal-clear Sicily aerial — Taormina Bay -->
+  <div class="bg" style="background-image:url('https://cdn.sixtyandme.com/wp-content/uploads/2025/10/Sixty-and-Me_10-Things-You-Didnt-Know-About-Sicily.jpg');filter:brightness(1.1) saturate(1.05)"></div>
+  <div class="ov-c" style="background:radial-gradient(ellipse at 55% 45%,rgba(6,5,4,.15),rgba(6,5,4,.78) 100%)"></div>
+  <div class="ov-b"></div>
+  <!-- Vertical accent lines -->
+  <div style="position:absolute;left:30%;top:0;bottom:0;width:1px;background:linear-gradient(to bottom,transparent,rgba(200,169,110,.07) 35%,rgba(200,169,110,.07) 65%,transparent)"></div>
+  <div style="position:absolute;right:30%;top:0;bottom:0;width:1px;background:linear-gradient(to bottom,transparent,rgba(200,169,110,.07) 35%,rgba(200,169,110,.07) 65%,transparent)"></div>
+  <div class="dc tl up"></div><div class="dc tr up"></div><div class="dc bl up d7"></div><div class="dc br up d7"></div>
+
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:48px">
+    <div class="chip up d1" style="margin-bottom:32px">
+      <svg width="5" height="5" viewBox="0 0 5 5"><circle cx="2.5" cy="2.5" r="2.5" fill="#C8A96E"/></svg>
+      English Oral Presentation · Group Project 2025
+    </div>
+    <p class="up d1" style="font-family:var(--fs);font-size:clamp(.9rem,2vw,1.2rem);font-weight:200;color:rgb(10, 1, 1);letter-spacing:.45em;text-transform:uppercase;margin-bottom:5px">48 Hours in</p>
+    <h1 class="up d2" style="font-family:var(--fs);font-size:clamp(5.5rem,13vw,11rem);font-weight:200;color:#fff;line-height:.88;letter-spacing:-.03em">Sicily</h1>
+    <p class="up d3" style="font-family:var(--fs);font-size:clamp(1.3rem,3.2vw,2.6rem);font-style:italic;font-weight:200;color:var(--g);letter-spacing:.05em;margin-top:8px">A Weekend Escape</p>
+
+    <div class="up d4" style="display:flex;align-items:center;gap:16px;margin:32px 0;width:min(440px,78vw)">
+      <div style="flex:1;height:1px;background:linear-gradient(to right,transparent,var(--g))"></div>
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 0L6 4L10 5L6 6L5 10L4 6L0 5L4 4Z" fill="#C8A96E"/></svg>
+      <div style="flex:1;height:1px;background:linear-gradient(to left,transparent,var(--g))"></div>
+    </div>
+
+    <p class="up d4" style="font-family:var(--fm);font-size:.5rem;letter-spacing:.28em;color:rgba(200,169,110,.32);text-transform:uppercase;margin-bottom:14px">Presented by</p>
+    <!-- REAL NAMES -->
+    <div class="up d5" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+      <div class="pcard">
+        <p style="font-family:var(--fm);font-size:.44rem;letter-spacing:.2em;color:var(--g);text-transform:uppercase;margin-bottom:7px">Presenter · 01</p>
+        <p style="font-family:var(--fs);font-size:1.25rem;color:#fff;font-weight:300;letter-spacing:.04em">Lazare</p>
+      </div>
+      <div class="pcard">
+        <p style="font-family:var(--fm);font-size:.44rem;letter-spacing:.2em;color:var(--g);text-transform:uppercase;margin-bottom:7px">Presenter · 02</p>
+        <p style="font-family:var(--fs);font-size:1.25rem;color:#fff;font-weight:300;letter-spacing:.04em">Kélouan</p>
+      </div>
+      <div class="pcard">
+        <p style="font-family:var(--fm);font-size:.44rem;letter-spacing:.2em;color:var(--g);text-transform:uppercase;margin-bottom:7px">Presenter · 03</p>
+        <p style="font-family:var(--fs);font-size:1.25rem;color:#fff;font-weight:300;letter-spacing:.04em">Eugène</p>
+      </div>
+    </div>
+  </div>
+  <div class="bignum">01</div>
+</div>
+
+<!-- ═══ SLIDE 02 · SICILY 3D MAP (was slide 3, now slide 2) ═══ -->
+<div class="slide" data-i="1" data-name="Sicily">
+  <canvas id="c3d"></canvas>
+
+  <div class="map-ui" style="display:flex;flex-direction:column;justify-content:flex-end;padding:clamp(36px,5vw,80px)">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:20px">
+      <div>
+        <div class="chip up d1" style="margin-bottom:14px"><svg width="5" height="5" viewBox="0 0 5 5"><circle cx="2.5" cy="2.5" r="2.5" fill="#C8A96E"/></svg>Sicily · Interactive 3D Map</div>
+        <h2 style="font-family:var(--fs);font-size:clamp(2rem,4.8vw,4.2rem);font-weight:200;color:#fff;line-height:.95" class="up d2">The Largest Island</h2>
+        <h2 style="font-family:var(--fs);font-size:clamp(2rem,4.8vw,4.2rem);font-weight:200;color:var(--g);font-style:italic;line-height:.95" class="up d2">in the Mediterranean</h2>
+      </div>
+      <div class="up d4" style="display:grid;grid-template-columns:repeat(4,auto);gap:9px">
+        <div class="stat"><p class="stat-n" style="font-size:1.5rem">25,832</p><p class="stat-l">km² area</p></div>
+        <div class="stat"><p class="stat-n" style="font-size:1.5rem">3,340m</p><p class="stat-l">Mt. Etna</p></div>
+        <div class="stat"><p class="stat-n" style="font-size:1.5rem">5.1M</p><p class="stat-l">People</p></div>
+        <div class="stat"><p class="stat-n" style="font-size:1.5rem">7</p><p class="stat-l">UNESCO</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- City labels -->
+  <div class="map-ui" style="pointer-events:none">
+    <div class="up d5" style="position:absolute;top:20%;left:24%">
+      <div style="background:rgba(6,5,4,.7);backdrop-filter:blur(12px);border:1px solid var(--bdr);padding:5px 11px">
+        <p style="font-family:var(--fm);font-size:.46rem;letter-spacing:.16em;color:var(--g)">🏙 PALERMO</p>
+        <p style="font-family:var(--fm);font-size:.42rem;color:var(--tm)">Capital · 680K</p>
+      </div>
+    </div>
+    <div class="up d6" style="position:absolute;top:46%;right:14%">
+      <div style="background:rgba(6,5,4,.7);backdrop-filter:blur(12px);border:1px solid rgba(200,169,110,.32);padding:5px 11px">
+        <p style="font-family:var(--fm);font-size:.46rem;letter-spacing:.16em;color:var(--g)">🐘 CATANIA</p>
+        <p style="font-family:var(--fm);font-size:.42rem;color:var(--tm)">Our destination</p>
+      </div>
+    </div>
+    <div class="up d7" style="position:absolute;top:31%;right:21%">
+      <div style="background:rgba(60,8,0,.75);backdrop-filter:blur(12px);border:1px solid rgba(196,64,32,.45);padding:5px 11px">
+        <p style="font-family:var(--fm);font-size:.46rem;letter-spacing:.16em;color:var(--lv)">🌋 MT. ETNA</p>
+        <p style="font-family:var(--fm);font-size:.42rem;color:rgba(212,121,58,.7)">3,340m · Active</p>
+      </div>
+    </div>
+    <!-- Oscillation hint -->
+    <div class="up d8" style="position:absolute;top:28px;right:44px">
+      <div style="background:rgba(6,5,4,.6);backdrop-filter:blur(10px);border:1px solid var(--bdr);padding:6px 12px;display:flex;align-items:center;gap:7px">
+        <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><path d="M1 5C3 2 5 8 7 5C9 2 11 8 13 5" stroke="rgba(200,169,110,.7)" stroke-width="1.2" stroke-linecap="round"/></svg>
+        <span style="font-family:var(--fm);font-size:.42rem;letter-spacing:.14em;color:rgba(200,169,110,.5)">DRAG · TILT ±10°</span>
+      </div>
+    </div>
+    <!-- Compass -->
+    <div class="up d8" style="position:absolute;bottom:90px;right:44px">
+      <svg width="50" height="50" viewBox="0 0 50 50" fill="none" opacity=".5">
+        <circle cx="25" cy="25" r="23" stroke="rgba(200,169,110,.3)" stroke-width="1"/>
+        <path d="M25 5L28.5 21H21.5Z" fill="#C8A96E" opacity=".9"/>
+        <path d="M25 45L21.5 29H28.5Z" fill="rgba(200,169,110,.25)"/>
+        <circle cx="25" cy="25" r="3" fill="rgba(200,169,110,.3)"/>
+        <text x="25" y="4" text-anchor="middle" font-size="4.5" fill="#C8A96E" font-family="DM Mono">N</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 03 · THE JOURNEY (was slide 2, now slide 3) ═══ -->
+<div class="slide" data-i="2" data-name="The Journey">
+  <!-- Paris night as departure context -->
+  <div class="bg" style="background-image:url('https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=1920&q=88')"></div>
+  <div class="ov-all"></div>
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 78% 50%,rgba(200,169,110,.04),transparent 58%)"></div>
+
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:clamp(36px,5vw,80px)">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center;max-width:1080px">
+      <div>
+        <div class="chip up d1" style="margin-bottom:18px"><svg width="5" height="5" viewBox="0 0 5 5"><circle cx="2.5" cy="2.5" r="2.5" fill="#C8A96E"/></svg>Friday Evening · The Journey</div>
+        <h2 style="font-family:var(--fs);font-size:clamp(2rem,4.5vw,3.8rem);font-weight:200;color:#fff;line-height:1" class="up d2">Angers</h2>
+        <h2 style="font-family:var(--fs);font-size:clamp(2rem,4.5vw,3.8rem);font-weight:200;color:var(--g);font-style:italic;line-height:1;margin-bottom:22px" class="up d2">→ Sicily</h2>
+        <span class="rule up d3" style="margin-bottom:24px"></span>
+
+        <div class="up d3">
+          <div class="jt"><div class="jl"><p class="jtime">17:30</p><p class="jcity">Angers</p><p class="jdet">Gare Saint-Laud</p><div class="jprice"><b>€35</b><span style="font-size:.54rem;color:var(--tm)"> · TGV</span></div></div><div class="jm"><div class="jd"></div><div class="jln"></div></div><div class="jr"><p style="font-size:.56rem;color:var(--tm);font-family:var(--fm);letter-spacing:.1em">TGV Atlantique</p><p style="font-size:.7rem;color:var(--g);font-family:var(--fs);font-style:italic;margin-top:3px">1h 30min</p></div></div>
+          <div class="jt"><div class="jl"><p class="jtime">19:05</p><p class="jcity">Paris</p><p class="jdet">Montparnasse → CDG</p><div class="jprice"><b>€12</b><span style="font-size:.54rem;color:var(--tm)"> · RER B</span></div></div><div class="jm"><div class="jd"></div><div class="jln"></div></div><div class="jr"><p style="font-size:.56rem;color:var(--tm);font-family:var(--fm);letter-spacing:.1em">RER B direct</p><p style="font-size:.7rem;color:var(--g);font-family:var(--fs);font-style:italic;margin-top:3px">45 min</p></div></div>
+          <div class="jt"><div class="jl"><p class="jtime">22:10</p><p class="jcity">CDG T2</p><p class="jdet">Charles de Gaulle</p><div class="jprice"><b>€99</b><span style="font-size:.54rem;color:var(--tm)"> · easyJet R/T</span></div></div><div class="jm"><div class="jd"></div><div class="jln"></div></div><div class="jr"><p style="font-size:.56rem;color:var(--tm);font-family:var(--fm);letter-spacing:.1em">EZY7154 · CDG→CTA</p><p style="font-size:.7rem;color:var(--g);font-family:var(--fs);font-style:italic;margin-top:3px">2h 20min</p></div></div>
+          <div class="jt"><div class="jl"><p class="jtime" style="color:var(--lv)">00:30</p><p class="jcity" style="color:var(--g)">Catania</p><p class="jdet">Airport CTA · Fontanarossa</p><div class="jprice" style="border-color:rgba(196,64,32,.4)"><b style="color:var(--lv)">48H</b><span style="font-size:.54rem;color:var(--tm)"> · starts</span></div></div><div class="jm"><div class="jd lv"></div></div><div class="jr"><p style="font-size:.56rem;color:var(--lv);font-family:var(--fm);letter-spacing:.1em">TOUCHDOWN ✓</p><p style="font-size:.7rem;color:var(--g);font-family:var(--fs);font-style:italic;margin-top:3px">Saturday</p></div></div>
+        </div>
+      </div>
+
+      <div class="up d4" style="display:flex;flex-direction:column;gap:11px">
+        <div class="glass" style="padding:20px 22px">
+          <p style="font-family:var(--fm);font-size:.5rem;letter-spacing:.2em;color:var(--g);margin-bottom:13px">JOURNEY SUMMARY</p>
+          <div style="display:flex;gap:20px;flex-wrap:wrap">
+            <div><p style="font-family:var(--fs);font-size:2.2rem;font-weight:200;color:var(--g)">~7h</p><p style="font-size:.52rem;color:var(--tm);letter-spacing:.1em;text-transform:uppercase">Angers → Sicily</p></div>
+            <div style="width:1px;background:var(--bdr)"></div>
+            <div><p style="font-family:var(--fs);font-size:2.2rem;font-weight:200;color:var(--g)">€146</p><p style="font-size:.52rem;color:var(--tm);letter-spacing:.1em;text-transform:uppercase">Per person R/T</p></div>
+          </div>
+        </div>
+        <div class="glass" style="padding:18px 20px">
+          <p style="font-family:var(--fm);font-size:.5rem;letter-spacing:.2em;color:var(--g);margin-bottom:11px">TRANSPORT BREAKDOWN</p>
+          <div class="brow"><span class="brl">🚄 TGV Angers–Paris (return)</span><span class="brp">€70</span></div>
+          <div class="brow"><span class="brl">🚇 RER B Montparnasse → CDG ×2</span><span class="brp">€24</span></div>
+          <div class="brow"><span class="brl">✈ Flight CDG–CTA–CDG (easyJet)</span><span class="brp">€99</span></div>
+          <div style="padding-top:9px;margin-top:5px;border-top:1px solid var(--bdr);display:flex;justify-content:space-between;align-items:center">
+            <span style="font-family:var(--fm);font-size:.52rem;letter-spacing:.15em;color:var(--g)">TOTAL TRANSPORT</span>
+            <span style="font-family:var(--fs);font-size:1.28rem;color:var(--g);font-style:italic;font-weight:200">€193</span>
+          </div>
+        </div>
+        <div class="glass" style="padding:12px 18px;display:flex;gap:9px;align-items:flex-start">
+          <span>💡</span>
+          <p style="font-size:.67rem;line-height:1.58;color:var(--tm);font-weight:300">Book <strong style="color:#fff">3 months ahead</strong> — easyJet CDG→CTA from <strong style="color:var(--g)">€49</strong> per way early booking.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="bignum">03</div>
+</div>
+
+<!-- ═══ SLIDE 04 · CATANIA + HOTEL ═══ -->
+<div class="slide" data-i="3" data-name="Catania · Arrival">
+  <!-- Catania cityscape with Etna in background -->
+  <div class="bg" style="background-image:url('https://images.trvl-media.com/place/924/1d9616ec-9db1-497b-b4e7-6837c0ec9f32.jpg')"></div>
+  <div class="ov-b"></div><div class="ov-v"></div>
+
+  <!-- Badges -->
+  <div style="position:absolute;top:clamp(50px,7vh,76px);left:clamp(26px,4vw,50px)" class="fl d1">
+    <div class="chip"><svg width="5" height="5" viewBox="0 0 5 5"><circle cx="2.5" cy="2.5" r="2.5" fill="#C8A96E"/></svg>Saturday 00:30 · Arrival</div>
+  </div>
+  <div style="position:absolute;top:clamp(50px,7vh,76px);right:clamp(26px,4vw,50px)" class="fr d1">
+    <div class="glass" style="padding:11px 16px"><p style="font-family:var(--fm);font-size:.45rem;letter-spacing:.18em;color:var(--g);margin-bottom:3px">✈ IATA</p><p style="font-size:.88rem;color:#fff;font-weight:500">CTA · Fontanarossa</p></div>
+  </div>
+
+  <div style="position:absolute;bottom:0;left:0;right:0;padding:clamp(32px,4.5vw,72px)">
+    <div class="up" style="display:flex;align-items:center;gap:11px;margin-bottom:11px"><span class="rule"></span><span style="font-family:var(--fm);font-size:.52rem;letter-spacing:.22em;color:var(--g)">CATANIA, EASTERN SICILY</span></div>
+    <h2 style="font-family:var(--fs);font-size:clamp(2.2rem,5.5vw,4.8rem);font-weight:200;color:#fff;line-height:.92;margin-bottom:4px" class="up d1">Welcome to</h2>
+    <h2 style="font-family:var(--fs);font-size:clamp(2.2rem,5.5vw,4.8rem);font-weight:200;color:var(--g);font-style:italic;line-height:.92;margin-bottom:20px" class="up d1">Catania</h2>
+
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:9px;max-width:1020px" class="up d2">
+      <div class="glass" style="padding:14px 14px"><p style="font-family:var(--fm);font-size:.44rem;letter-spacing:.15em;color:var(--g);margin-bottom:6px">🖤 VOLCANIC BASALT</p><p style="font-size:.68rem;line-height:1.58;color:var(--tm);font-weight:300">Rebuilt after <strong style="color:#fff">1693</strong> earthquake in black lava rock.</p></div>
+      <div class="glass" style="padding:14px 14px"><p style="font-family:var(--fm);font-size:.44rem;letter-spacing:.15em;color:var(--g);margin-bottom:6px">🐘 THE ELEPHANT</p><p style="font-size:.68rem;line-height:1.58;color:var(--tm);font-weight:300">City symbol at Piazza del Duomo since <strong style="color:#fff">1736</strong>.</p></div>
+      <div class="glass" style="padding:14px 14px"><p style="font-family:var(--fm);font-size:.44rem;letter-spacing:.15em;color:var(--g);margin-bottom:6px">🏛 UNESCO 2002</p><p style="font-size:.68rem;line-height:1.58;color:var(--tm);font-weight:300">Baroque centre — <strong style="color:#fff">World Heritage</strong> finest in Europe.</p></div>
+      <div class="glass" style="padding:14px 14px"><p style="font-family:var(--fm);font-size:.44rem;letter-spacing:.15em;color:var(--g);margin-bottom:6px">🌋 UNDER ETNA</p><p style="font-size:.68rem;line-height:1.58;color:var(--tm);font-weight:300">The volcano shapes the city's soil, food and soul.</p></div>
+      <!-- HOTEL INFO -->
+      <div class="glass" style="padding:14px 14px;border-color:rgba(200,169,110,.32)">
+        <p style="font-family:var(--fm);font-size:.44rem;letter-spacing:.15em;color:var(--g);margin-bottom:6px">🏨 HOTEL TONIGHT</p>
+        <p style="font-size:.72rem;color:#fff;font-weight:500;margin-bottom:3px">B&amp;B Palazzo Stesicoro</p>
+        <p style="font-size:.62rem;color:var(--tm);line-height:1.5;font-weight:300">Near Piazza del Duomo<br>Check-in: <strong style="color:#fff">01:30</strong><br>Check-out: <strong style="color:#fff">08:00</strong><br>~<strong style="color:var(--g)">€25/pers</strong> per night</p>
+      </div>
+    </div>
+  </div>
+  <div class="bignum">04</div>
+</div>
+
+<!-- ═══ SLIDE 05 · DAY 1 MORNING — CATANIA DISCOVERY ═══ -->
+<div class="slide" data-i="4" data-name="Day 1 · Morning">
+  <!-- Full dark bg — using Catania-specific content -->
+  <div style="position:absolute;inset:0;background:#060504"></div>
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(200,169,110,.04),transparent 55%)"></div>
+
+  <div style="position:absolute;inset:0;display:grid;grid-template-columns:42% 1fr;overflow:hidden">
+
+    <!-- LEFT: What we will do -->
+    <div style="display:flex;flex-direction:column;justify-content:center;padding:clamp(32px,4.5vw,70px);padding-right:28px;z-index:2;overflow-y:auto">
+      <div class="chip up d1" style="margin-bottom:18px"><svg width="5" height="5" viewBox="0 0 5 5"><circle cx="2.5" cy="2.5" r="2.5" fill="#C8A96E"/></svg>Saturday Morning · Day 1</div>
+      <h2 style="font-family:var(--fs);font-size:clamp(1.7rem,3.4vw,3rem);font-weight:200;color:#fff;line-height:1.05" class="up d2">Catania</h2>
+      <h2 style="font-family:var(--fs);font-size:clamp(1.7rem,3.4vw,3rem);font-weight:200;color:var(--g);font-style:italic;line-height:1.05;margin-bottom:18px" class="up d2">The Baroque City</h2>
+      <span class="rule up d3" style="margin-bottom:20px"></span>
+
+      <div class="up d3">
+        <div class="tl">
+          <span class="tl-t">09:00</span>
+          <div class="tl-dw"><div class="tl-d"></div><div class="tl-v"></div></div>
+          <div><p class="tl-h">Piazza del Duomo</p><p class="tl-b">The iconic elephant fountain · Sant'Agata Cathedral · first espresso of the trip · baroque atmosphere</p></div>
+        </div>
+        <div class="tl">
+          <span class="tl-t">10:30</span>
+          <div class="tl-dw"><div class="tl-d"></div><div class="tl-v"></div></div>
+          <div><p class="tl-h">La Pescheria Fish Market</p><p class="tl-b">Swordfish, tuna, sea urchins, wild octopus — vendors shouting, raw Sicilian energy</p></div>
+        </div>
+        <div class="tl">
+          <span class="tl-t">12:00</span>
+          <div class="tl-dw"><div class="tl-d"></div><div class="tl-v"></div></div>
+          <div><p class="tl-h">Arancini &amp; Granita Break</p><p class="tl-b">Street arancino al ragù + coffee granita with warm brioche — the quintessential Sicilian mid-morning</p></div>
+        </div>
+        <div class="tl">
+          <span class="tl-t">14:00</span>
+          <div class="tl-dw"><div class="tl-d"></div><div class="tl-v"></div></div>
+          <div><p class="tl-h">Via dei Crociferi</p><p class="tl-b">Most beautiful baroque street in Catania · 4 ornate churches · magnificent golden stone facades</p></div>
+        </div>
+        <div class="tl">
+          <span class="tl-t">16:00</span>
+          <div class="tl-dw"><div class="tl-d"></div><div class="tl-v"></div></div>
+          <div><p class="tl-h">Castello Ursino</p><p class="tl-b">13th-century Swabian castle · Civic museum · Greek and Roman artefacts from 2,800 years of history</p></div>
+        </div>
+      </div>
+
+      <div class="glass up d5" style="padding:11px 16px;margin-top:16px;display:flex;gap:16px;flex-wrap:wrap">
+        <div><p style="font-family:var(--fm);font-size:.43rem;letter-spacing:.14em;color:var(--g)">🎫 ENTRIES</p><p style="font-family:var(--fs);font-size:.95rem;color:#fff;font-style:italic">~€5</p></div>
+        <div style="width:1px;background:var(--bdr)"></div>
+        <div><p style="font-family:var(--fm);font-size:.43rem;letter-spacing:.14em;color:var(--g)">🍊 STREET FOOD</p><p style="font-family:var(--fs);font-size:.95rem;color:#fff;font-style:italic">€5–8</p></div>
+        <div style="width:1px;background:var(--bdr)"></div>
+        <div><p style="font-family:var(--fm);font-size:.43rem;letter-spacing:.14em;color:var(--g)">🚌 AMT BUS</p><p style="font-family:var(--fs);font-size:.95rem;color:#fff;font-style:italic">€1</p></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: 3×3 photo grid of Catania places -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr 1fr;gap:4px;padding:4px 4px 4px 0;height:100%">
+      <!-- Photo 1: Fontana dell'Elefante -->
+      <div class="photo-cell up d2" style="background-image:url('https://upload.wikimedia.org/wikipedia/commons/d/da/Catane_Fontana_Dell_elefante.jpg');grid-column:1;grid-row:1/3">
+        <div class="cap">Fontana dell'Elefante</div>
+      </div>
+      <!-- Photo 2: Piazza del Duomo cathedral -->
+      <div class="photo-cell up d3" style="background-image:url('https://turismo.comune.catania.it/scoprire-catania/foto-per-sezioni/295-cattedrale-duomo.jpg')">
+        <div class="cap">Piazza del Duomo</div>
+      </div>
+      <!-- Photo 3: Baroque architecture -->
+      <div class="photo-cell up d3" style="background-image:url('https://www.sicilytourist.com/images/Catania-Via-Crociferi1.png')">
+        <div class="cap">Via dei Crociferi</div>
+      </div>
+      <!-- Photo 4: Sicily coastline / Catania sea -->
+      <div class="photo-cell up d4" style="background-image:url('https://s1.immobiliare.it/news/app/uploads/2025/07/Dove-andare-al-mare-vicino-a-Catania-jpeg.webp')">
+        <div class="cap">Catania Seafront</div>
+      </div>
+      <!-- Photo 5: Etna from Catania -->
+      <div class="photo-cell up d4" style="background-image:url('https://www.wnct.com/wp-content/uploads/sites/99/2021/02/59623a6e1d2b4f1eb16f76fb041e4bb3.jpg?w=2560&h=1440&crop=1')">
+        <div class="cap">Etna from the City</div>
+      </div>
+      <!-- Photo 6: Taormina / Sicily landscape (spanning) -->
+      <div class="photo-cell up d5" style="background-image:url('https://images.unsplash.com/photo-1566501206188-5dd0cf160a0e?w=600&q=85');grid-column:1/3">
+        <div class="cap">Taormina · Sicily</div>
+      </div>
+      <!-- Photo 7: Castello Ursino / medieval -->
+      <div class="photo-cell up d5" style="background-image:url('https://qds.it/wp-content/uploads/2021/02/10673.jpg');grid-row:3">
+        <div class="cap">Castle Ursino</div>
+      </div>
+      <!-- Photo 7: Castello Ursino / medieval -->
+      <div class="photo-cell up d5" style="background-image:url('https://www.buttalapasta.it/wp-content/uploads/2023/10/arancini-31102023-buttalapasta.it_.jpg');grid-row:3">
+        <div class="cap">Granita & Arancini</div>
+      </div>
+    </div>
+  </div>
+  <div class="bignum">05</div>
+</div>
+
+<!-- ═══ SLIDE 06 · DAY 1 EVENING — WITH FOOD IMAGES ═══ -->
+<div class="slide" data-i="5" data-name="Day 1 · Evening">
+  <div style="position:absolute;inset:0;background:#060504"></div>
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 70% 40%,rgba(200,169,110,.04),transparent 60%)"></div>
+
+  <div style="position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr;overflow:hidden">
+
+    <!-- LEFT: Evening program -->
+    <div style="display:flex;flex-direction:column;justify-content:center;padding:clamp(32px,4.5vw,72px);z-index:2">
+      <div class="chip up d1" style="margin-bottom:18px"><svg width="5" height="5" viewBox="0 0 5 5"><circle cx="2.5" cy="2.5" r="2.5" fill="#C8A96E"/></svg>Saturday Evening · Day 1</div>
+      <h2 style="font-family:var(--fs);font-size:clamp(1.8rem,3.8vw,3.3rem);font-weight:200;color:#fff;line-height:1" class="up d2">Dinner &amp;</h2>
+      <h2 style="font-family:var(--fs);font-size:clamp(1.8rem,3.8vw,3.3rem);font-weight:200;color:var(--g);font-style:italic;line-height:1;margin-bottom:20px" class="up d2">La Dolce Vita</h2>
+      <span class="rule up d3" style="margin-bottom:20px"></span>
+
+      <div class="up d3" style="display:flex;flex-direction:column;gap:14px">
+        <div class="glass" style="padding:15px 18px">
+          <p style="font-family:var(--fm);font-size:.46rem;letter-spacing:.16em;color:var(--g);margin-bottom:6px">🌅 18:00 · APERITIVO</p>
+          <p style="font-weight:500;color:#fff;font-size:.8rem;margin-bottom:4px">Aperol Spritz at Piazza Università</p>
+          <p style="font-size:.68rem;line-height:1.55;color:var(--tm);font-weight:300">Baroque facades glowing gold at sunset · local wine · olives · the art of doing nothing beautifully</p>
+          <p style="font-family:var(--fs);font-size:1rem;color:var(--g);font-style:italic;margin-top:7px">€5–8</p>
+        </div>
+        <div class="glass" style="padding:15px 18px;border-color:rgba(200,169,110,.3)">
+          <p style="font-family:var(--fm);font-size:.46rem;letter-spacing:.16em;color:var(--g);margin-bottom:6px">🍝 20:00 · DINNER</p>
+          <p style="font-weight:500;color:#fff;font-size:.8rem;margin-bottom:4px">Pasta alla Norma — Catania's signature dish</p>
+          <p style="font-size:.68rem;line-height:1.55;color:var(--tm);font-weight:300">Rigatoni · fried aubergine · salted ricotta · fresh basil · Named after Bellini's opera <em>Norma</em>, born in this city</p>
+          <p style="font-family:var(--fs);font-size:1rem;color:var(--g);font-style:italic;margin-top:7px">€12–18</p>
+        </div>
+        <div class="glass" style="padding:15px 18px">
+          <p style="font-family:var(--fm);font-size:.46rem;letter-spacing:.16em;color:var(--g);margin-bottom:6px">🌙 22:00 · EVENING</p>
+          <p style="font-weight:500;color:#fff;font-size:.8rem;margin-bottom:4px">Passeggiata &amp; Cannolo Night</p>
+          <p style="font-size:.68rem;line-height:1.55;color:var(--tm);font-weight:300">Evening stroll through illuminated baroque streets · Fresh <em>cannolo</em> at Savia pasticceria · Early rest — Etna calls at dawn</p>
+          <p style="font-family:var(--fs);font-size:1rem;color:var(--g);font-style:italic;margin-top:7px">€2–4</p>
+        </div>
+      </div>
+      <div class="up d6" style="margin-top:14px">
+        <div class="glass" style="padding:10px 16px;display:inline-flex;align-items:center;gap:9px">
+          <span>💡</span><p style="font-size:.67rem;color:var(--tm);font-weight:300">Book Etna cable car online · <strong style="color:#fff">Wake up 07:00 Sunday</strong></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Food photo collage -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,1fr);gap:4px;padding:4px;height:100%">
+      <!-- Pasta alla Norma -->
+      <div class="photo-cell up d2" style="background-image:url('https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=500&q=88');grid-column:1/3;position:relative">
+        <div class="cap">Pasta alla Norma — Catania's Signature</div>
+      </div>
+      <!-- Arancini -->
+      <div class="photo-cell up d3" style="background-image:url('https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=400&q=88');position:relative">
+        <div class="cap">Arancini Siciliani</div>
+      </div>
+      <!-- Sicilian restaurant atmosphere -->
+      <div class="photo-cell up d3" style="background-image:url('https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&q=88');position:relative">
+        <div class="cap">Sicilian Trattoria</div>
+      </div>
+      <!-- Cannoli -->
+      <div class="photo-cell up d4" style="background-image:url('https://images.unsplash.com/photo-1631206753348-db44968fd440?w=400&q=88');position:relative">
+        <div class="cap">Cannoli Siciliani</div>
+      </div>
+      <!-- Aperitivo / Spritz -->
+      <div class="photo-cell up d4" style="background-image:url('https://images.unsplash.com/photo-1536935338788-846bb9e9e52b?w=400&q=88');position:relative">
+        <div class="cap">Aperitivo Hour</div>
+      </div>
+    </div>
+  </div>
+  <div class="bignum">06</div>
+</div>
+
+<!-- ═══ SLIDE 07 · MOUNT ETNA FACTS ═══ -->
+<div class="slide" data-i="6" data-name="Mount Etna">
+  <div class="bg" style="background-image:url('https://images.unsplash.com/photo-1597069012800-84b36ff2b4fb?w=1920&q=92')"></div>
+  <div class="ov-lava"></div><div class="ov-b"></div>
+  <div class="lglow" style="position:absolute;width:700px;height:400px;bottom:-80px;left:36%;transform:translateX(-50%);background:radial-gradient(ellipse,rgba(196,64,32,.35),transparent 70%);pointer-events:none"></div>
+
+  <div style="position:absolute;top:clamp(50px,7vh,76px);left:clamp(26px,4vw,50px)" class="fl d1">
+    <div class="chip-lava"><span style="width:5px;height:5px;border-radius:50%;background:var(--lv);display:block;animation:bp 1.5s infinite"></span>Currently Active</div>
+  </div>
+
+  <div style="position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr">
+    <div style="display:flex;flex-direction:column;justify-content:flex-end;padding:clamp(36px,5vw,76px);padding-bottom:clamp(54px,7vh,88px);z-index:2">
+      <h2 style="font-family:var(--fs);font-size:clamp(3rem,7vw,6.5rem);font-weight:200;color:#fff;line-height:.88" class="up d2">Mount</h2>
+      <h2 style="font-family:var(--fs);font-size:clamp(3rem,7vw,6.5rem);font-weight:200;color:var(--a);font-style:italic;line-height:.88;margin-bottom:14px" class="up d2">Etna</h2>
+      <p style="font-family:var(--fs);font-size:clamp(.85rem,1.7vw,1.1rem);color:rgba(245,240,232,.3);font-weight:200;letter-spacing:.1em;margin-bottom:18px" class="up d3">Europe's Highest Active Volcano</p>
+      <span class="rule-lava up d3" style="margin-bottom:20px"></span>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;max-width:390px" class="up d4">
+        <div class="fact"><p class="fact-n">3,340m</p><p class="fact-l">Altitude</p></div>
+        <div class="fact"><p class="fact-n">500K</p><p class="fact-l">Years old</p></div>
+        <div class="fact"><p class="fact-n">200+</p><p class="fact-l">Craters</p></div>
+        <div class="fact"><p class="fact-n">1,250°C</p><p class="fact-l">Lava temp</p></div>
+        <div class="fact"><p class="fact-n">2013</p><p class="fact-l">UNESCO yr</p></div>
+        <div class="fact"><p class="fact-n">~400</p><p class="fact-l">Eruptions</p></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;justify-content:center;padding:clamp(28px,4vw,56px);z-index:2">
+      <div class="glass-lava up d2" style="padding:24px">
+        <p style="font-family:var(--fm);font-size:.5rem;letter-spacing:.2em;color:var(--a);margin-bottom:16px">ALTITUDE COMPARISON</p>
+        <div style="display:flex;flex-direction:column;gap:13px;margin-bottom:18px">
+          <div><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:.7rem;color:#fff;font-weight:500">Mt. Etna · Sicily</span><span style="font-family:var(--fm);font-size:.62rem;color:var(--a)">3,340m ★</span></div><div style="height:3px;background:rgba(255,255,255,.07);border-radius:2px"><div class="vbar" style="--w:100%"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:.7rem;color:var(--tm)">Stromboli · Sicily</span><span style="font-family:var(--fm);font-size:.62rem;color:rgba(212,121,58,.5)">924m</span></div><div style="height:3px;background:rgba(255,255,255,.07);border-radius:2px"><div class="vbar" style="--w:28%"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:.7rem;color:var(--tm)">Vesuvius · Naples</span><span style="font-family:var(--fm);font-size:.62rem;color:rgba(212,121,58,.4)">1,281m</span></div><div style="height:3px;background:rgba(255,255,255,.07);border-radius:2px"><div class="vbar" style="--w:38%"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:.7rem;color:var(--tm)">Mont Blanc · Alps</span><span style="font-family:var(--fm);font-size:.62rem;color:rgba(212,121,58,.3)">4,808m</span></div><div style="height:3px;background:rgba(255,255,255,.07);border-radius:2px"><div class="vbar" style="--w:69%"></div></div></div>
+        </div>
+        <div style="border-top:1px solid rgba(196,64,32,.2);padding-top:15px">
+          <p style="font-family:var(--fm);font-size:.47rem;letter-spacing:.15em;color:var(--a);margin-bottom:10px">DID YOU KNOW?</p>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;gap:8px"><span style="color:var(--a);font-size:.7rem;flex-shrink:0">→</span><p style="font-size:.67rem;color:var(--tm);line-height:1.52;font-weight:300">You can <strong style="color:#fff">ski on Etna in winter</strong> — the only ski resort on Earth on an active volcano.</p></div>
+            <div style="display:flex;gap:8px"><span style="color:var(--a);font-size:.7rem;flex-shrink:0">→</span><p style="font-size:.67rem;color:var(--tm);line-height:1.52;font-weight:300">Etna produces <strong style="color:#fff">DOC volcanic wines</strong> — vineyards grow up to 1,000m altitude on lava soil.</p></div>
+            <div style="display:flex;gap:8px"><span style="color:var(--a);font-size:.7rem;flex-shrink:0">→</span><p style="font-size:.67rem;color:var(--tm);line-height:1.52;font-weight:300">Ancient Greeks believed it was the forge of <strong style="color:#fff">Hephaestus</strong>, god of fire.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="bignum" style="color:rgba(120,24,0,.05)">07</div>
+</div>
+
+<!-- ═══ SLIDE 08 · DAY 2 — CONQUERING ETNA ═══ -->
+<div class="slide" data-i="7" data-name="Day 2 · Etna Summit">
+  <!-- ETNA full background — clear volcano shot -->
+  <div class="bg" style="background-image:url('https://images.unsplash.com/photo-1597069012800-84b36ff2b4fb?w=1920&q=96');background-position:center 20%"></div>
+  <div style="position:absolute;inset:0;background:linear-gradient(105deg,rgba(6,5,4,.97) 0%,rgba(6,5,4,.9) 42%,rgba(6,5,4,.32) 68%,rgba(6,5,4,.12) 100%)"></div>
+  <div class="ov-b"></div>
+  <div class="lglow" style="position:absolute;width:500px;height:300px;bottom:-60px;right:18%;background:radial-gradient(ellipse,rgba(196,64,32,.2),transparent 70%);pointer-events:none"></div>
+
+  <div style="position:absolute;top:clamp(50px,7vh,76px);right:clamp(26px,4vw,50px)" class="fr d1">
+    <div class="glass-lava" style="padding:10px 16px"><p style="font-family:var(--fm);font-size:.44rem;letter-spacing:.18em;color:var(--lv);margin-bottom:3px">🌋 ETNA IN THE BACKGROUND</p><p style="font-size:.86rem;color:#fff;font-weight:500">Summit visible · 3,340m</p></div>
+  </div>
+
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:clamp(36px,5vw,76px)">
+    <div class="chip up d1" style="margin-bottom:18px"><svg width="5" height="5" viewBox="0 0 5 5"><circle cx="2.5" cy="2.5" r="2.5" fill="#C8A96E"/></svg>Sunday · Day 2 — The Summit</div>
+    <h2 style="font-family:var(--fs);font-size:clamp(1.9rem,4vw,3.6rem);font-weight:200;color:#fff;line-height:1" class="up d2">Conquering</h2>
+    <h2 style="font-family:var(--fs);font-size:clamp(1.9rem,4vw,3.6rem);font-weight:200;color:var(--g);font-style:italic;line-height:1;margin-bottom:20px" class="up d2">Mount Etna</h2>
+    <span class="rule up d3" style="margin-bottom:20px"></span>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:clamp(12px,2.5vw,28px);max-width:880px" class="up d3">
+      <div>
+        <div class="tl"><span class="tl-t" style="color:var(--a)">07:30</span><div class="tl-dw"><div class="tl-d lv"></div><div class="tl-v" style="background:linear-gradient(to bottom,var(--lv),rgba(196,64,32,.04))"></div></div><div><p class="tl-h">Depart Catania</p><p class="tl-b">45min drive · volcanic landscape grows · arrive Rifugio Sapienza (1,923m)</p></div></div>
+        <div class="tl"><span class="tl-t" style="color:var(--a)">09:00</span><div class="tl-dw"><div class="tl-d lv"></div><div class="tl-v" style="background:linear-gradient(to bottom,var(--lv),rgba(196,64,32,.04))"></div></div><div><p class="tl-h">🚡 Cable Car — Funivia</p><p class="tl-b">1,900m → 2,500m · 15min · stunning Mediterranean view · 4×4 transfer to higher zones</p></div></div>
+        <div class="tl"><span class="tl-t" style="color:var(--a)">10:00</span><div class="tl-dw"><div class="tl-d lv"></div><div class="tl-v"></div></div><div><p class="tl-h">🥾 Summit Trek at 2,900m</p><p class="tl-b">Alpine guide · lava fields · fumaroles · crater rim overlook · lunar landscape</p></div></div>
+      </div>
+      <div>
+        <div class="tl"><span class="tl-t" style="color:var(--a)">13:30</span><div class="tl-dw"><div class="tl-d lv"></div><div class="tl-v" style="background:linear-gradient(to bottom,var(--lv),rgba(196,64,32,.04))"></div></div><div><p class="tl-h">🌅 Descent &amp; Mountain Lunch</p><p class="tl-b">Rifugio Sapienza · <strong style="color:#fff">Pasta al pomodoro</strong> · <strong style="color:#fff">Etna DOC wine</strong> · <strong style="color:#fff">Arancino</strong> · Crateri Silvestri visit</p></div></div>
+        <div class="tl"><span class="tl-t" style="color:var(--a)">15:30</span><div class="tl-dw"><div class="tl-d lv"></div><div class="tl-v"></div></div><div><p class="tl-h">Return to Catania</p><p class="tl-b">Freshen up at hotel · prepare for Sunday evening in the city</p></div></div>
+
+        <div class="glass-lava" style="padding:15px 18px;margin-top:10px">
+          <p style="font-family:var(--fm);font-size:.45rem;letter-spacing:.16em;color:var(--a);margin-bottom:10px">🍽 FOOD ON ETNA · PER PERSON</p>
+          <div class="brow"><span class="brl">☕ Breakfast at hotel</span><span class="brp">€5</span></div>
+          <div class="brow"><span class="brl">🍊 Arancino at Sapienza</span><span class="brp">€3</span></div>
+          <div class="brow"><span class="brl">🍝 Pasta + Etna DOC wine</span><span class="brp">€18</span></div>
+          <div class="brow"><span class="brl">💶 Cable car + 4×4 + guide</span><span class="brp">€90</span></div>
+          <div style="padding-top:8px;margin-top:4px;border-top:1px solid rgba(196,64,32,.2);display:flex;justify-content:space-between;align-items:center">
+            <span style="font-family:var(--fm);font-size:.52rem;letter-spacing:.14em;color:var(--a)">FULL ETNA DAY</span>
+            <span style="font-family:var(--fs);font-size:1.3rem;color:var(--a);font-style:italic;font-weight:200">~€116</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="bignum" style="color:rgba(100,20,0,.05)">08</div>
+</div>
+
+<!-- ═══ SLIDE 09 · NEW — SUNDAY EVENING & RETURN ═══ -->
+<div class="slide" data-i="8" data-name="Sunday Night · Return">
+  <!-- Catania by night / nightlife -->
+  <div class="bg" style="background-image:url('https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=1920&q=88')"></div>
+  <div class="ov-all"></div>
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 55% 30%,rgba(200,169,110,.06),transparent 60%)"></div>
+
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:clamp(36px,5vw,78px)">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;max-width:1100px;align-items:start">
+
+      <!-- LEFT: Sunday evening festivities -->
+      <div>
+        <div class="chip up d1" style="margin-bottom:18px"><svg width="5" height="5" viewBox="0 0 5 5"><circle cx="2.5" cy="2.5" r="2.5" fill="#C8A96E"/></svg>Sunday Afternoon &amp; Evening</div>
+        <h2 style="font-family:var(--fs);font-size:clamp(1.8rem,3.8vw,3.3rem);font-weight:200;color:#fff;line-height:1" class="up d2">Catania by Night</h2>
+        <h2 style="font-family:var(--fs);font-size:clamp(1.8rem,3.8vw,3.3rem);font-weight:200;color:var(--g);font-style:italic;line-height:1;margin-bottom:20px" class="up d2">Festivals &amp; Farewell</h2>
+        <span class="rule up d3" style="margin-bottom:20px"></span>
+
+        <div class="up d3">
+          <div class="tl">
+            <span class="tl-t">17:00</span>
+            <div class="tl-dw"><div class="tl-d"></div><div class="tl-v"></div></div>
+            <div><p class="tl-h">🎭 Street Performances</p><p class="tl-b">Catania's baroque squares come alive — musicians, street artists, local markets in Piazza Federico di Svevia</p></div>
+          </div>
+          <div class="tl">
+            <span class="tl-t">19:00</span>
+            <div class="tl-dw"><div class="tl-d"></div><div class="tl-v"></div></div>
+            <div><p class="tl-h">🎶 Aperitivo &amp; Live Music</p><p class="tl-b">Via Pardo fish district — terrace bars with live traditional Sicilian music · Nerello Mascalese wine · perfect last sunset</p></div>
+          </div>
+          <div class="tl">
+            <span class="tl-t">20:30</span>
+            <div class="tl-dw"><div class="tl-d"></div><div class="tl-v"></div></div>
+            <div><p class="tl-h">🍽 Final Dinner</p><p class="tl-b">Trattoria locale · <strong style="color:#fff">Spaghetti ai ricci di mare</strong> (sea urchin pasta) · <strong style="color:#fff">Sorbetto al limone</strong> · last <em>cannolo</em> at Savia</p></div>
+          </div>
+          <div class="tl">
+            <span class="tl-t">22:00</span>
+            <div class="tl-dw"><div class="tl-d"></div><div class="tl-v"></div></div>
+            <div><p class="tl-h">🏨 Back to Hotel · Pack Bags</p><p class="tl-b">Check out · taxi to Catania Fontanarossa airport CTA — departure at <strong style="color:#fff">23:45</strong></p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Return journey -->
+      <div class="up d4" style="display:flex;flex-direction:column;gap:11px">
+        <!-- Return flights -->
+        <div class="glass" style="padding:20px 22px">
+          <p style="font-family:var(--fm);font-size:.5rem;letter-spacing:.2em;color:var(--g);margin-bottom:14px">✈ THE RETURN JOURNEY</p>
+          <div class="jt"><div class="jl"><p class="jtime">23:45</p><p class="jcity">Catania CTA</p><p class="jdet">Fontanarossa · Check-in</p></div><div class="jm"><div class="jd lv"></div><div class="jln"></div></div><div class="jr"><p style="font-size:.56rem;color:var(--tm);font-family:var(--fm);letter-spacing:.1em">EZY return</p><p style="font-size:.7rem;color:var(--g);font-family:var(--fs);font-style:italic;margin-top:3px">2h 20min</p></div></div>
+          <div class="jt"><div class="jl"><p class="jtime" style="color:var(--g)">02:10</p><p class="jcity">Paris CDG</p><p class="jdet">Charles de Gaulle · Terminal 2</p></div><div class="jm"><div class="jd"></div><div class="jln"></div></div><div class="jr"><p style="font-size:.56rem;color:var(--tm);font-family:var(--fm);letter-spacing:.1em">Uncle's place nearby</p><p style="font-size:.7rem;color:var(--g);font-family:var(--fs);font-style:italic;margin-top:3px">Rest until dawn</p></div></div>
+          <div class="jt"><div class="jl"><p class="jtime">07:00</p><p class="jcity">Paris →</p><p class="jdet">Gare Montparnasse</p><div class="jprice"><b>€35</b><span style="font-size:.54rem;color:var(--tm)"> · TGV</span></div></div><div class="jm"><div class="jd"></div><div class="jln"></div></div><div class="jr"><p style="font-size:.56rem;color:var(--tm);font-family:var(--fm);letter-spacing:.1em">TGV Atlantique</p><p style="font-size:.7rem;color:var(--g);font-family:var(--fs);font-style:italic;margin-top:3px">1h 30min</p></div></div>
+          <div class="jt" style="margin-bottom:0"><div class="jl"><p class="jtime" style="color:var(--g)">08:30</p><p class="jcity" style="color:var(--g)">Angers 🏠</p><p class="jdet">Gare Saint-Laud</p></div><div class="jm"><div class="jd lv"></div></div><div class="jr"><p style="font-size:.58rem;color:var(--lv);font-family:var(--fm);letter-spacing:.1em">HOME ✓</p><p style="font-size:.7rem;color:var(--g);font-family:var(--fs);font-style:italic;margin-top:3px">Mission complete</p></div></div>
+        </div>
+
+        <!-- Evening cost -->
+        <div class="glass" style="padding:17px 20px">
+          <p style="font-family:var(--fm);font-size:.48rem;letter-spacing:.18em;color:var(--g);margin-bottom:11px">💶 SUNDAY EVENING / PERSON</p>
+          <div class="brow"><span class="brl">🎭 Festivals &amp; street art</span><span class="brp">free</span></div>
+          <div class="brow"><span class="brl">🍷 Aperitivo + live music</span><span class="brp">€8</span></div>
+          <div class="brow"><span class="brl">🍽 Final dinner</span><span class="brp">€20</span></div>
+          <div class="brow"><span class="brl">🚕 Taxi hotel → airport</span><span class="brp">€15</span></div>
+          <div style="padding-top:8px;margin-top:4px;border-top:1px solid var(--bdr);display:flex;justify-content:space-between">
+            <span style="font-family:var(--fm);font-size:.52rem;letter-spacing:.14em;color:var(--g)">EVENING TOTAL</span>
+            <span style="font-family:var(--fs);font-size:1.2rem;color:var(--g);font-style:italic;font-weight:200">~€43</span>
+          </div>
+        </div>
+
+        <div class="glass" style="padding:12px 16px">
+          <div class="qline" style="justify-content:center">
+            <div class="qdash"></div>
+            <p class="qtxt" style="text-align:center">"Bon viaggiu e a prestu"<br><span style="font-size:.72rem;color:rgba(200,169,110,.32)">Safe travels and see you soon — Sicilian farewell</span></p>
+            <div class="qdash"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="bignum">09</div>
+</div>
+
+<!-- ═══ SLIDE 10 · SICILIAN GASTRONOMY WITH FOOD PHOTOS ═══ -->
+<div class="slide" data-i="9" data-name="Sicilian Gastronomy">
+  <div style="position:absolute;inset:0;background:#060504"></div>
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 15% 50%,rgba(200,169,110,.04),transparent 55%)"></div>
+
+  <div style="position:absolute;inset:0;display:grid;grid-template-columns:38% 1fr;overflow:hidden">
+
+    <!-- LEFT: Dish descriptions -->
+    <div style="display:flex;flex-direction:column;justify-content:center;padding:clamp(32px,4.5vw,68px);padding-right:24px;z-index:2">
+      <div class="chip up d1" style="margin-bottom:18px"><svg width="5" height="5" viewBox="0 0 5 5"><circle cx="2.5" cy="2.5" r="2.5" fill="#C8A96E"/></svg>Sicilian Gastronomy</div>
+      <h2 style="font-family:var(--fs);font-size:clamp(1.7rem,3.4vw,3rem);font-weight:200;color:#fff;line-height:1.05" class="up d2">5 Must-Try</h2>
+      <h2 style="font-family:var(--fs);font-size:clamp(1.7rem,3.4vw,3rem);font-weight:200;color:var(--g);font-style:italic;line-height:1.05;margin-bottom:18px" class="up d2">Dishes</h2>
+      <span class="rule up d3" style="margin-bottom:18px"></span>
+
+      <div class="up d3">
+        <div class="food"><span style="font-size:1.3rem;flex-shrink:0;margin-top:1px">🍊</span><div><p style="font-weight:500;color:#fff;font-size:.78rem;margin-bottom:1px">Arancini <span style="font-family:var(--fs);color:var(--g);font-style:italic">€2–3</span></p><p style="font-size:.66rem;line-height:1.55;color:var(--tm);font-weight:300">Saffron rice balls · ragù · mozzarella · Sicily's best street food</p></div></div>
+        <div class="food"><span style="font-size:1.3rem;flex-shrink:0;margin-top:1px">🍝</span><div><p style="font-weight:500;color:#fff;font-size:.78rem;margin-bottom:1px">Pasta alla Norma <span style="font-family:var(--fs);color:var(--g);font-style:italic">€12</span></p><p style="font-size:.66rem;line-height:1.55;color:var(--tm);font-weight:300">Catania's iconic dish — aubergine, ricotta salata, basil, tomato</p></div></div>
+        <div class="food"><span style="font-size:1.3rem;flex-shrink:0;margin-top:1px">🥐</span><div><p style="font-weight:500;color:#fff;font-size:.78rem;margin-bottom:1px">Cannoli Siciliani <span style="font-family:var(--fs);color:var(--g);font-style:italic">€2</span></p><p style="font-size:.66rem;line-height:1.55;color:var(--tm);font-weight:300">Sheep-milk ricotta · chocolate chips · candied orange peel</p></div></div>
+        <div class="food"><span style="font-size:1.3rem;flex-shrink:0;margin-top:1px">🍦</span><div><p style="font-weight:500;color:#fff;font-size:.78rem;margin-bottom:1px">Granita e Brioche <span style="font-family:var(--fs);color:var(--g);font-style:italic">€3–4</span></p><p style="font-size:.66rem;line-height:1.55;color:var(--tm);font-weight:300">Semi-frozen coffee granita scooped into a warm, soft brioche</p></div></div>
+        <div class="food" style="border-bottom:none"><span style="font-size:1.3rem;flex-shrink:0;margin-top:1px">🍷</span><div><p style="font-weight:500;color:#fff;font-size:.78rem;margin-bottom:1px">Etna DOC Wine <span style="font-family:var(--fs);color:var(--g);font-style:italic">€5–8</span></p><p style="font-size:.66rem;line-height:1.55;color:var(--tm);font-weight:300">Nerello Mascalese · volcanic terroir · Italy's most exciting wine</p></div></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: 3×2 food photo mosaic -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:4px;padding:4px 4px 4px 0;height:100%">
+      <!-- Arancini -->
+      <div class="photo-cell up d2" style="background-image:url('https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=500&q=88')">
+        <div class="cap">Arancini Siciliani</div>
+      </div>
+      <!-- Pasta alla Norma -->
+      <div class="photo-cell up d2" style="background-image:url('https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=500&q=88')">
+        <div class="cap">Pasta alla Norma</div>
+      </div>
+      <!-- Cannoli -->
+      <div class="photo-cell up d3" style="background-image:url('https://images.unsplash.com/photo-1631206753348-db44968fd440?w=500&q=88')">
+        <div class="cap">Cannoli Siciliani</div>
+      </div>
+      <!-- Granita (coffee / lemon) -->
+      <div class="photo-cell up d3" style="background-image:url('https://images.unsplash.com/photo-1570145820259-b5b80c5c8bd6?w=500&q=88')">
+        <div class="cap">Granita e Brioche</div>
+      </div>
+      <!-- Sicilian food spread / market -->
+      <div class="photo-cell up d4" style="background-image:url('https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=500&q=88')">
+        <div class="cap">Sicilian Trattoria</div>
+      </div>
+      <!-- Etna wine / vineyard -->
+      <div class="photo-cell up d4" style="background-image:url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=500&q=88')">
+        <div class="cap">Etna DOC Wine</div>
+      </div>
+    </div>
+  </div>
+  <div class="bignum">10</div>
+</div>
+
+<!-- ═══ SLIDE 11 · COMPLETE BUDGET (≤€500) ═══ -->
+<div class="slide" data-i="10" data-name="Budget">
+  <div style="position:absolute;inset:0;background:#060504"></div>
+  <div style="position:absolute;inset:0;background-image:url('https://images.unsplash.com/photo-1566501206188-5dd0cf160a0e?w=1920&q=50');background-size:cover;opacity:.04"></div>
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(200,169,110,.04),transparent 70%)"></div>
+
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:clamp(36px,5vw,68px)">
+    <div class="chip up d1" style="margin-bottom:16px;align-self:flex-start"><svg width="5" height="5" viewBox="0 0 5 5"><circle cx="2.5" cy="2.5" r="2.5" fill="#C8A96E"/></svg>Complete Budget · 48+ Hours in Sicily</div>
+    <h2 style="font-family:var(--fs);font-size:clamp(1.8rem,4vw,3.4rem);font-weight:200;color:#fff;line-height:1" class="up d2">Full Expense</h2>
+    <h2 style="font-family:var(--fs);font-size:clamp(1.8rem,4vw,3.4rem);font-weight:200;color:var(--g);font-style:italic;margin-bottom:22px" class="up d2">Breakdown</h2>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:clamp(12px,2vw,24px);max-width:1060px" class="up d3">
+
+      <!-- PER PERSON — RECALCULATED ≤€500 -->
+      <div class="glass" style="padding:22px 24px">
+        <p style="font-family:var(--fm);font-size:.52rem;letter-spacing:.2em;color:var(--g);margin-bottom:15px">👤 PER PERSON — FULL TRIP</p>
+        <div class="brow"><span class="brl">🚄 TGV Angers↔Paris (return)</span><span class="brp">€70</span></div>
+        <div class="brow"><span class="brl">🚇 RER B ×2 (CDG both ways)</span><span class="brp">€24</span></div>
+        <div class="brow"><span class="brl">✈ Flight CDG–CTA–CDG (easyJet)</span><span class="brp">€99</span></div>
+        <div class="brow"><span class="brl">🏨 Hotel 2 nights (shared room)</span><span class="brp">€50</span></div>
+        <div class="brow"><span class="brl">🚗 Car rental 1 day ÷ 3</span><span class="brp">€17</span></div>
+        <div class="brow"><span class="brl">🌋 Etna (cable car + 4×4 + guide)</span><span class="brp">€90</span></div>
+        <div class="brow"><span class="brl">🍝 All meals &amp; drinks (3 days)</span><span class="brp">€95</span></div>
+        <div class="brow"><span class="brl">🎫 Activities &amp; entries</span><span class="brp">€10</span></div>
+        <div class="brow"><span class="brl">🚕 Taxi to airport (Sunday)</span><span class="brp">€15</span></div>
+        <div class="btot">
+          <span class="btot-l">TOTAL / PERSON</span>
+          <span class="btot-p">€470</span>
+        </div>
+        <!-- Under budget badge -->
+        <div style="margin-top:10px;display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(200,169,110,.07);border:1px solid rgba(200,169,110,.2);border-radius:2px">
+          <span style="font-size:.85rem">✅</span>
+          <p style="font-family:var(--fm);font-size:.48rem;letter-spacing:.14em;color:var(--g)">UNDER THE €500 BUDGET — Savings: €30/person</p>
+        </div>
+      </div>
+
+      <!-- GROUP OF 3 + VISUAL -->
+      <div style="display:flex;flex-direction:column;gap:11px">
+        <div class="glass" style="padding:22px 24px">
+          <p style="font-family:var(--fm);font-size:.52rem;letter-spacing:.2em;color:var(--g);margin-bottom:15px">👥 OUR GROUP OF 3</p>
+          <div class="brow"><span class="brl">🚄 TGV ×3 (return each)</span><span class="brp">€210</span></div>
+          <div class="brow"><span class="brl">🚇 RER B ×6</span><span class="brp">€72</span></div>
+          <div class="brow"><span class="brl">✈ Flights ×3</span><span class="brp">€297</span></div>
+          <div class="brow"><span class="brl">🏨 Hotel 2 nights (2 rooms)</span><span class="brp">€150</span></div>
+          <div class="brow"><span class="brl">🚗 Car rental (1 full day)</span><span class="brp">€50</span></div>
+          <div class="brow"><span class="brl">🌋 Etna ×3</span><span class="brp">€270</span></div>
+          <div class="brow"><span class="brl">🍝 All food group (3 days)</span><span class="brp">€285</span></div>
+          <div class="brow"><span class="brl">🎫 Activities ×3</span><span class="brp">€30</span></div>
+          <div class="brow"><span class="brl">🚕 Taxi ×3</span><span class="brp">€45</span></div>
+          <div class="btot">
+            <span class="btot-l">TOTAL GROUP</span>
+            <span class="btot-p" style="font-size:2.1rem">€1,409</span>
+          </div>
+        </div>
+
+        <!-- Category breakdown bars -->
+        <div class="glass" style="padding:16px 20px">
+          <p style="font-family:var(--fm);font-size:.48rem;letter-spacing:.17em;color:var(--g);margin-bottom:11px">BREAKDOWN BY CATEGORY</p>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:.64rem;color:var(--tm)">Transport (TGV + Flight + RER)</span><span style="font-family:var(--fm);font-size:.58rem;color:#fff">€193 · 41%</span></div><div style="height:2px;background:rgba(255,255,255,.07);border-radius:1px"><div class="catbar" data-w="41" style="background:var(--g)"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:.64rem;color:var(--tm)">Etna Activities</span><span style="font-family:var(--fm);font-size:.58rem;color:#fff">€90 · 19%</span></div><div style="height:2px;background:rgba(255,255,255,.07);border-radius:1px"><div class="catbar" data-w="19" style="background:var(--lv)"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:.64rem;color:var(--tm)">All Food &amp; Drinks</span><span style="font-family:var(--fm);font-size:.58rem;color:#fff">€95 · 20%</span></div><div style="height:2px;background:rgba(255,255,255,.07);border-radius:1px"><div class="catbar" data-w="20" style="background:var(--a)"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:.64rem;color:var(--tm)">Accommodation + Car + Taxi</span><span style="font-family:var(--fm);font-size:.58rem;color:#fff">€82 · 17%</span></div><div style="height:2px;background:rgba(255,255,255,.07);border-radius:1px"><div class="catbar" data-w="17" style="background:var(--gl)"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:.64rem;color:var(--tm)">Activities &amp; Entries</span><span style="font-family:var(--fm);font-size:.58rem;color:#fff">€10 · 2%</span></div><div style="height:2px;background:rgba(255,255,255,.07);border-radius:1px"><div class="catbar" data-w="2" style="background:rgba(200,169,110,.4)"></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="bignum">11</div>
+</div>
+
+<!-- ═══ SLIDE 12 · GRAZII ═══ -->
+<div class="slide" data-i="11" data-name="Grazii">
+  <div class="bg" style="background-image:url('https://images.unsplash.com/photo-1534430480872-3498386e7856?w=1920&q=92')"></div>
+  <div style="position:absolute;inset:0;background:rgba(6,5,4,.86)"></div>
+  <div class="ov-v"></div>
+  <div class="aglow" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:900px;height:500px;background:radial-gradient(ellipse,rgba(200,169,110,.07),transparent 70%);pointer-events:none"></div>
+
+  <!-- Trinacria -->
+  <div class="trn" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(500px,80vw);height:min(500px,80vh);opacity:.055;pointer-events:none">
+    <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+      <circle cx="110" cy="110" r="100" fill="none" stroke="#C8A96E" stroke-width=".8"/><circle cx="110" cy="110" r="88" fill="none" stroke="#C8A96E" stroke-width=".3"/><circle cx="110" cy="110" r="20" fill="rgba(200,169,110,.1)" stroke="#C8A96E" stroke-width="1.2"/>
+      <g transform="rotate(0,110,110)"><line x1="110" y1="90" x2="110" y2="16" stroke="#C8A96E" stroke-width="1.8" stroke-linecap="round"/><line x1="105" y1="65" x2="95" y2="55" stroke="#C8A96E" stroke-width="1"/><line x1="105" y1="55" x2="95" y2="45" stroke="#C8A96E" stroke-width="1"/><line x1="115" y1="65" x2="125" y2="55" stroke="#C8A96E" stroke-width="1"/><line x1="115" y1="55" x2="125" y2="45" stroke="#C8A96E" stroke-width="1"/></g>
+      <g transform="rotate(120,110,110)"><line x1="110" y1="90" x2="110" y2="16" stroke="#C8A96E" stroke-width="1.8" stroke-linecap="round"/><line x1="105" y1="65" x2="95" y2="55" stroke="#C8A96E" stroke-width="1"/><line x1="105" y1="55" x2="95" y2="45" stroke="#C8A96E" stroke-width="1"/><line x1="115" y1="65" x2="125" y2="55" stroke="#C8A96E" stroke-width="1"/><line x1="115" y1="55" x2="125" y2="45" stroke="#C8A96E" stroke-width="1"/></g>
+      <g transform="rotate(240,110,110)"><line x1="110" y1="90" x2="110" y2="16" stroke="#C8A96E" stroke-width="1.8" stroke-linecap="round"/><line x1="105" y1="65" x2="95" y2="55" stroke="#C8A96E" stroke-width="1"/><line x1="105" y1="55" x2="95" y2="45" stroke="#C8A96E" stroke-width="1"/><line x1="115" y1="65" x2="125" y2="55" stroke="#C8A96E" stroke-width="1"/><line x1="115" y1="55" x2="125" y2="45" stroke="#C8A96E" stroke-width="1"/></g>
+    </svg>
+  </div>
+  <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(to right,transparent,rgba(200,169,110,.18),transparent)"></div>
+  <div style="position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(to right,transparent,rgba(200,169,110,.18),transparent)"></div>
+
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:48px">
+    <div class="chip up d1" style="margin-bottom:24px"><svg width="5" height="5" viewBox="0 0 5 5"><circle cx="2.5" cy="2.5" r="2.5" fill="#C8A96E"/></svg>In Sicilian Language · Lingua Siciliana</div>
+    <div class="up d2" style="margin-bottom:10px">
+      <h1 style="font-family:var(--fs);font-size:clamp(6rem,15vw,12.5rem);font-weight:200;font-style:italic;line-height:.85;letter-spacing:-.03em;color:#fff">Grazii</h1>
+    </div>
+    <div style="width:min(380px,72vw);height:1px;background:linear-gradient(to right,transparent,var(--g),transparent)" class="up d3"></div>
+    <p style="font-family:var(--fm);font-size:.54rem;letter-spacing:.28em;color:rgba(200,169,110,.35);margin:14px 0 26px;text-transform:uppercase" class="up d3">[ gra-DZEE ] · Thank You in Sicilian</p>
+
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:28px">
+      <div class="up d4 fl-anim"><div class="glass" style="padding:8px 20px"><p style="font-family:var(--fs);font-size:clamp(.95rem,2.2vw,1.35rem);color:var(--gl);font-style:italic;margin-bottom:3px">"Grazii assai pi l'attenzioni vostra"</p><p style="font-family:var(--fm);font-size:.45rem;letter-spacing:.18em;color:rgba(200,169,110,.38)">Thank you so much for your kind attention</p></div></div>
+      <div class="up d5 fl-anim" style="animation-delay:1.5s"><div class="glass" style="padding:8px 20px"><p style="font-family:var(--fs);font-size:clamp(.85rem,1.9vw,1.15rem);color:var(--g);font-style:italic;margin-bottom:3px">"La Sicilia è sempri nte nostri cori"</p><p style="font-family:var(--fm);font-size:.45rem;letter-spacing:.18em;color:rgba(200,169,110,.35)">Sicily is always in our hearts</p></div></div>
+      <div class="up d6 fl-anim" style="animation-delay:3s"><div class="glass" style="padding:8px 20px"><p style="font-family:var(--fs);font-size:clamp(.82rem,1.7vw,1.05rem);color:rgba(200,169,110,.62);font-style:italic;margin-bottom:3px">"Lu munnu è bellu picchì è varriu"</p><p style="font-family:var(--fm);font-size:.45rem;letter-spacing:.18em;color:rgba(200,169,110,.3)">The world is beautiful because it varies</p></div></div>
+    </div>
+
+    <div class="up d7" style="margin-bottom:20px">
+      <h3 style="font-family:var(--fs);font-size:clamp(1.6rem,4vw,3.5rem);font-weight:200;color:#fff">Thank You <span style="color:var(--g);font-style:italic">— Any Questions?</span></h3>
+    </div>
+
+    <!-- Real names -->
+    <div class="up d8" style="display:flex;gap:9px;flex-wrap:wrap;justify-content:center">
+      <div class="pcard"><p style="font-family:var(--fm);font-size:.42rem;letter-spacing:.18em;color:var(--g);margin-bottom:6px">Presenter 01</p><p style="font-family:var(--fs);font-size:1.1rem;color:#fff;font-weight:300;letter-spacing:.04em">Lazare</p></div>
+      <div class="pcard"><p style="font-family:var(--fm);font-size:.42rem;letter-spacing:.18em;color:var(--g);margin-bottom:6px">Presenter 02</p><p style="font-family:var(--fs);font-size:1.1rem;color:#fff;font-weight:300;letter-spacing:.04em">Kélouan</p></div>
+      <div class="pcard"><p style="font-family:var(--fm);font-size:.42rem;letter-spacing:.18em;color:var(--g);margin-bottom:6px">Presenter 03</p><p style="font-family:var(--fs);font-size:1.1rem;color:#fff;font-weight:300;letter-spacing:.04em">Eugène</p></div>
+    </div>
+  </div>
+  <div class="bignum">12</div>
+</div>
+
+</div><!-- #deck -->
+
+<!-- ═══════════════════════════════════════════════════════
+     JAVASCRIPT — ENGINE + THREE.JS OSCILLATING 3D SICILY
+═══════════════════════════════════════════════════════ -->
+<script>
+(function(){
+'use strict';
+
+const slides=[...document.querySelectorAll('.slide')];
+const TOTAL=slides.length;
+let cur=0,busy=false,sicReady=false;
+
+/* DOTS */
+const dotsEl=document.getElementById('dots');
+for(let i=0;i<TOTAL;i++){const d=document.createElement('div');d.className='dot'+(i===0?' on':'');d.addEventListener('click',()=>go(i));dotsEl.appendChild(d);}
+
+/* CHROME */
+const prog=document.getElementById('prog'),ctrEl=document.getElementById('ctr'),snEl=document.getElementById('sname'),pB=document.getElementById('pB'),nB=document.getElementById('nB');
+function chrome(){
+  prog.style.width=(TOTAL>1?cur/(TOTAL-1)*100:0)+'%';
+  ctrEl.textContent=String(cur+1).padStart(2,'0')+' / '+String(TOTAL).padStart(2,'0');
+  snEl.textContent=slides[cur].dataset.name||'';
+  pB.disabled=cur===0;nB.disabled=cur===TOTAL-1;
+  [...dotsEl.children].forEach((d,i)=>d.classList.toggle('on',i===cur));
+  if(cur===10){setTimeout(()=>{document.querySelectorAll('.catbar').forEach(b=>{b.style.width=b.dataset.w+'%';});},450);}
+}
+
+/* NAV */
+function go(idx){
+  if(idx===cur||busy||idx<0||idx>=TOTAL)return;
+  busy=true;
+  const out=slides[cur],inn=slides[idx];
+  out.classList.add('so');out.classList.remove('on');
+  setTimeout(()=>{
+    out.classList.remove('so');cur=idx;
+    inn.classList.add('on','si');chrome();
+    if(cur===1&&!sicReady){initSicily3D();sicReady=true;}
+    setPMode(cur===6||cur===7?'lava':'gold');
+    setTimeout(()=>{inn.classList.remove('si');busy=false;},900);
+  },460);
+}
+pB.addEventListener('click',()=>go(cur-1));
+nB.addEventListener('click',()=>go(cur+1));
+document.addEventListener('keydown',e=>{
+  if(['ArrowRight','ArrowDown',' '].includes(e.key)){e.preventDefault();go(cur+1);}
+  if(['ArrowLeft','ArrowUp'].includes(e.key)){e.preventDefault();go(cur-1);}
+});
+let tx=0;
+document.addEventListener('touchstart',e=>{tx=e.touches[0].clientX},{passive:true});
+document.addEventListener('touchend',e=>{const d=tx-e.changedTouches[0].clientX;if(Math.abs(d)>55)d>0?go(cur+1):go(cur-1);});
+
+/* CURSOR */
+const dot=document.getElementById('cur'),ring=document.getElementById('cur2');
+let mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;dot.style.left=mx+'px';dot.style.top=my+'px';});
+(function cr(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(cr);})();
+document.querySelectorAll('.nb,.pcard,.glass,.gh,.dot').forEach(el=>{el.addEventListener('mouseenter',()=>{dot.style.width='13px';dot.style.height='13px';ring.style.width='44px';ring.style.height='44px';});el.addEventListener('mouseleave',()=>{dot.style.width='7px';dot.style.height='7px';ring.style.width='28px';ring.style.height='28px';});});
+
+/* PARALLAX */
+let pmx=.5,pmy=.5;
+document.addEventListener('mousemove',e=>{pmx=e.clientX/innerWidth;pmy=e.clientY/innerHeight;});
+(function pl(){const bg=slides[cur].querySelector('.bg');if(bg){const ox=(pmx-.5)*2.8,oy=(pmy-.5)*2.8;bg.style.transform=`scale(1.1) translate(${ox}%,${oy}%)`;}requestAnimationFrame(pl);})();
+
+/* PARTICLES */
+const pcv=document.getElementById('pcv'),pctx=pcv.getContext('2d');
+let PW=innerWidth,PH=innerHeight;pcv.width=PW;pcv.height=PH;
+window.addEventListener('resize',()=>{PW=pcv.width=innerWidth;PH=pcv.height=innerHeight;});
+let pMode='gold';function setPMode(m){pMode=m;}
+class P{constructor(){this.reset(true);}reset(i){this.x=Math.random()*PW;this.y=i?Math.random()*PH:PH+8;this.s=Math.random()*2+.35;this.vy=-(Math.random()*.38+.1);this.vx=(Math.random()-.5)*.24;this.life=Math.random();this.ml=Math.random()*.55+.4;this.ph=Math.random()*Math.PI*2;this.a=0;}tick(){this.life+=.0025;const t=this.life;this.a=(t<.18?t/.18:t>this.ml?(1-(t-this.ml)/(1-this.ml)):1)*.65;this.a=Math.max(0,Math.min(1,this.a));this.y+=this.vy;this.x+=this.vx+Math.sin(this.ph+this.life*4)*.13;if(this.y<-8||this.life>=1)this.reset(false);}draw(){const[r,g,b]=pMode==='lava'?[212,121,58]:[200,169,110];pctx.save();pctx.globalAlpha=this.a;pctx.fillStyle=`rgb(${r},${g},${b})`;pctx.shadowColor=`rgba(${r},${g},${b},.85)`;pctx.shadowBlur=this.s*2.8;pctx.beginPath();pctx.arc(this.x,this.y,this.s,0,Math.PI*2);pctx.fill();pctx.restore();}}
+const PS=Array.from({length:90},()=>new P());
+(function pa(){pctx.clearRect(0,0,PW,PH);PS.forEach(p=>{p.tick();p.draw();});requestAnimationFrame(pa);})();
+
+/* ══════════════════════════════════════════════════
+   THREE.JS — REALISTIC OSCILLATING ±10° SICILY MAP
+══════════════════════════════════════════════════ */
+function initSicily3D(){
+  const canvas=document.getElementById('c3d');
+  const W=innerWidth,H=innerHeight;
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+  renderer.setSize(W,H);
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setClearColor(0x05101E,1);
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.physicallyCorrectLights=true;
+
+  const scene=new THREE.Scene();
+  scene.fog=new THREE.FogExp2(0x05101E,.018);
+
+  const camera=new THREE.PerspectiveCamera(36,W/H,.1,300);
+  camera.position.set(0,1.1,10.5);
+  camera.lookAt(0,.1,0);
+
+  /* ── LIGHTS ── */
+  scene.add(new THREE.AmbientLight(0x223355,1.2));
+  const sun=new THREE.DirectionalLight(0xFFF0D0,2.8);
+  sun.position.set(5,9,6);sun.castShadow=true;
+  sun.shadow.mapSize.set(2048,2048);scene.add(sun);
+  const fill=new THREE.DirectionalLight(0x4466AA,.6);
+  fill.position.set(-6,-2,-5);scene.add(fill);
+  const back=new THREE.DirectionalLight(0x6688BB,.3);
+  back.position.set(0,5,-10);scene.add(back);
+
+  /* ═══════════════════════════════════════════════════
+     TERRAIN TEXTURE — realistic satellite/topo look
+  ═══════════════════════════════════════════════════ */
+  const TC=document.createElement('canvas');TC.width=1024;TC.height=1024;
+  const tc=TC.getContext('2d');
+
+  // ─ Base mediterranean soil ─
+  tc.fillStyle='#9E8C62';tc.fillRect(0,0,1024,1024);
+
+  // ─ Fertile plain (centre/south) ─
+  const plain=tc.createLinearGradient(0,400,0,1024);
+  plain.addColorStop(0,'rgba(168,148,88,0)');
+  plain.addColorStop(.5,'rgba(172,152,90,.55)');
+  plain.addColorStop(1,'rgba(188,164,98,.7)');
+  tc.fillStyle=plain;tc.fillRect(0,400,1024,624);
+
+  // ─ Northern mountain belt (Madonie / Nebrodi / Peloritani) ─
+  // Green forested ridge across entire north strip
+  for(let x=0;x<1024;x+=1){
+    const h=55+Math.sin(x*.018)*22+Math.sin(x*.042)*14+Math.sin(x*.095)*8;
+    const g=tc.createLinearGradient(0,0,0,h+20);
+    g.addColorStop(0,'rgba(38,62,22,.96)');g.addColorStop(1,'rgba(38,62,22,0)');
+    tc.fillStyle=g;tc.fillRect(x,0,1,h+20);
+  }
+  // Snow-cap ridge line (peaks)
+  tc.beginPath();tc.moveTo(0,30);
+  for(let x=0;x<=1024;x+=8){
+    const y=18+Math.sin(x*.02)*12+Math.sin(x*.055)*8+Math.sin(x*.12)*5;
+    tc.lineTo(x,y);
+  }
+  tc.strokeStyle='rgba(240,235,225,.45)';tc.lineWidth=2.5;tc.stroke();
+
+  // Madonie mountain mass (NW centre)
+  const mad=tc.createRadialGradient(290,55,0,290,55,110);
+  mad.addColorStop(0,'rgba(32,52,18,.95)');mad.addColorStop(.4,'rgba(42,64,24,.7)');
+  mad.addColorStop(1,'rgba(42,64,24,0)');tc.fillStyle=mad;tc.fillRect(0,0,1024,1024);
+
+  // Peloritani (NE, Messina side)
+  const pel=tc.createRadialGradient(940,30,0,940,30,85);
+  pel.addColorStop(0,'rgba(36,56,20,.9)');pel.addColorStop(1,'rgba(36,56,20,0)');
+  tc.fillStyle=pel;tc.fillRect(0,0,1024,1024);
+
+  // ─ Hyblaean plateau (SE – Siracusa/Ragusa) ─
+  const hyb=tc.createRadialGradient(820,780,0,820,780,160);
+  hyb.addColorStop(0,'rgba(148,128,72,.55)');hyb.addColorStop(1,'rgba(148,128,72,0)');
+  tc.fillStyle=hyb;tc.fillRect(0,0,1024,1024);
+
+  // ─ Western salt flats (Marsala/Trapani) ─
+  const salt=tc.createLinearGradient(0,150,120,420);
+  salt.addColorStop(0,'rgba(220,200,155,.62)');salt.addColorStop(1,'rgba(220,200,155,0)');
+  tc.fillStyle=salt;tc.fillRect(0,150,200,400);
+
+  // ─ Agrigento valley ─
+  const agr=tc.createRadialGradient(340,860,0,340,860,140);
+  agr.addColorStop(0,'rgba(158,136,72,.5)');agr.addColorStop(1,'rgba(158,136,72,0)');
+  tc.fillStyle=agr;tc.fillRect(0,0,1024,1024);
+
+  // ─ Catania coastal plain (black lava soil — south of Etna) ─
+  const cat=tc.createRadialGradient(840,470,0,840,470,130);
+  cat.addColorStop(0,'rgba(18,10,4,.75)');cat.addColorStop(.5,'rgba(22,14,6,.4)');
+  cat.addColorStop(1,'rgba(22,14,6,0)');
+  tc.fillStyle=cat;tc.fillRect(0,0,1024,1024);
+
+  // ─ ETNA VOLCANIC ZONE — main black lava field ─
+  const etnaZone=tc.createRadialGradient(800,310,0,800,310,165);
+  etnaZone.addColorStop(0,'rgba(6,3,1,1)');
+  etnaZone.addColorStop(.18,'rgba(10,5,2,.96)');
+  etnaZone.addColorStop(.38,'rgba(18,10,4,.88)');
+  etnaZone.addColorStop(.58,'rgba(30,16,6,.65)');
+  etnaZone.addColorStop(.78,'rgba(44,24,10,.35)');
+  etnaZone.addColorStop(1,'rgba(44,24,10,0)');
+  tc.fillStyle=etnaZone;tc.fillRect(0,0,1024,1024);
+
+  // Etna lava flow stripes (running S from summit)
+  tc.save();tc.globalAlpha=.32;
+  [[796,320,820,480],[782,315,758,495],[812,318,845,462]].forEach(([x1,y1,x2,y2])=>{
+    const lvg=tc.createLinearGradient(x1,y1,x2,y2);
+    lvg.addColorStop(0,'rgba(4,2,0,.9)');lvg.addColorStop(1,'rgba(4,2,0,0)');
+    tc.fillStyle=lvg;tc.beginPath();
+    tc.ellipse((x1+x2)/2,(y1+y2)/2,10,Math.hypot(x2-x1,y2-y1)/2,Math.atan2(y2-y1,x2-x1)+Math.PI/2,0,Math.PI*2);
+    tc.fill();
+  });tc.restore();
+
+  // ─ Rivers (Simeto, Salso, Belice, Platani) ─
+  tc.save();tc.strokeStyle='rgba(60,100,140,.28)';tc.lineWidth=1.5;tc.lineCap='round';
+  // Simeto river (largest - runs from Etna area to Catania gulf)
+  tc.beginPath();tc.moveTo(760,320);tc.bezierCurveTo(780,420,820,490,870,580);tc.stroke();
+  // Salso (central)
+  tc.beginPath();tc.moveTo(480,350);tc.bezierCurveTo(460,500,420,680,380,820);tc.stroke();
+  // Belice (SW)
+  tc.beginPath();tc.moveTo(240,280);tc.bezierCurveTo(230,450,220,620,180,800);tc.stroke();
+  tc.restore();
+
+  // ─ Terrain noise for realism ─
+  for(let i=0;i<8000;i++){
+    const x=Math.random()*1024,y=Math.random()*1024;
+    const bright=Math.random()>.48;
+    tc.fillStyle=(bright?'rgba(255,230,160,':'rgba(30,15,0,')+Math.random()*.035+')';
+    tc.fillRect(x,y,Math.random()*2,Math.random()*2);
+  }
+
+  // ─ Coast glow (bright littoral edge) ─
+  tc.save();tc.globalAlpha=.18;
+  tc.strokeStyle='rgba(200,180,120,1)';tc.lineWidth=4;
+  tc.strokeRect(2,2,1020,1020);
+  tc.restore();
+
+  const terrainTex=new THREE.CanvasTexture(TC);
+
+  /* ═══════════════════════════════════════════════════
+     SICILY HEIGHTMAP — PlaneGeometry with vertex displace
+     For truly realistic map: subdivided plane + height data
+  ═══════════════════════════════════════════════════ */
+  // We use ExtrudeGeometry for the island body AND
+  // a separate heightmap mesh for terrain relief on top
+
+  /* ACCURATE SICILY OUTLINE (50+ points, real geography) */
+  const s=new THREE.Shape();
+  // Starting from Capo Boeo (westernmost tip) going clockwise
+  s.moveTo(-2.08, .38);          // Capo Boeo (W tip, Marsala)
+  s.bezierCurveTo(-2.0,.52,-1.94,.62,-1.86,.7);   // NW coast up
+  s.bezierCurveTo(-1.76,.76,-1.64,.79,-1.52,.80);  // Trapani area
+  s.bezierCurveTo(-1.35,.82,-1.14,.84,-.92,.83);   // toward Palermo
+  s.bezierCurveTo(-.72,.83,-.52,.82,-.36,.80);     // Palermo W suburb
+  s.bezierCurveTo(-.20,.78,-.06,.74, .02,.70);     // Palermo bay
+  s.bezierCurveTo( .16,.66, .30,.70, .46,.76);     // Capo Cefalù area
+  s.bezierCurveTo( .62,.82, .76,.87, .92,.90);     // Capo d'Orlando area
+  s.bezierCurveTo(1.06,.92,1.20,.93,1.38,.94);    // Milazzo
+  s.bezierCurveTo(1.55,.95,1.70,.97,1.85,1.00);   // Capo Peloro approach
+  s.bezierCurveTo(1.96,.98,2.06,.94,2.12,.88);    // Capo Peloro (NE TIP – Messina)
+  s.bezierCurveTo(2.10,.78,2.04,.66,1.98,.56);    // Ionian coast S
+  s.bezierCurveTo(1.92,.48,1.86,.42,1.80,.40);    // Acireale/Taormina area
+  s.bezierCurveTo(1.74,.30,1.70,.18,1.66,.08);    // Above Catania
+  s.bezierCurveTo(1.62,-.02,1.60,-.12,1.58,-.22); // Catania gulf N
+  s.bezierCurveTo(1.56,-.34,1.58,-.46,1.60,-.56); // Catania gulf S
+  s.bezierCurveTo(1.60,-.68,1.58,-.80,1.54,-.90); // Augusta / Siracusa
+  s.bezierCurveTo(1.50,-.98,1.44,-1.04,1.36,-1.08);// Capo Murro di Porco
+  s.bezierCurveTo(1.24,-1.10,1.10,-1.08, .96,-1.04);// Capo Passero approach
+  s.bezierCurveTo( .82,-1.06, .72,-1.10, .62,-1.10);// Capo Passero (SE TIP)
+  s.bezierCurveTo( .48,-1.08, .34,-.98, .20,-.88); // S coast E part
+  s.bezierCurveTo( .04,-.78,-.12,-.68,-.26,-.60);  // Gela gulf
+  s.bezierCurveTo(-.42,-.52,-.56,-.44,-.70,-.36);  // Gela area
+  s.bezierCurveTo(-.86,-.28,-1.00,-.20,-1.12,-.12);// Agrigento area
+  s.bezierCurveTo(-1.26,-.04,-1.38, .04,-1.50, .12);// SW coast
+  s.bezierCurveTo(-1.62,.18,-1.72,.24,-1.80,.28); // Sciacca/Selinunte
+  s.bezierCurveTo(-1.88,.32,-1.96,.34,-2.02,.36); // Back to Capo Boeo
+  s.lineTo(-2.08,.38);
+
+  // Extrude the island body
+  const extCfg={depth:.30,bevelEnabled:true,bevelThickness:.05,bevelSize:.026,bevelSegments:6};
+  const geo=new THREE.ExtrudeGeometry(s,extCfg);
+
+  const matTop=new THREE.MeshStandardMaterial({
+    map:terrainTex,roughness:.86,metalness:.03,
+    bumpMap:terrainTex,bumpScale:.08
+  });
+  const matSide=new THREE.MeshStandardMaterial({color:0x5A3E18,roughness:.94,metalness:.02});
+  const island=new THREE.Mesh(geo,[matTop,matSide]);
+  island.receiveShadow=true;island.castShadow=true;
+
+  // Subtle glow halo
+  const glowMat=new THREE.MeshBasicMaterial({color:0xC8A050,transparent:true,opacity:.08,depthWrite:false,side:THREE.BackSide});
+  const glowGeo=new THREE.ExtrudeGeometry(s,{depth:.05,bevelEnabled:false});
+  const glowMesh=new THREE.Mesh(glowGeo,glowMat);
+  glowMesh.scale.set(1.022,1.022,1.022);glowMesh.position.z=.06;
+
+  /* ── ETNA VOLCANO 3D CONE ── */
+  const EX=1.38,EY=.18,EZ=.31,EH=.62;
+  // Main cone
+  const etnaGeo=new THREE.ConeGeometry(.28,EH,28,4);
+  const etnaMat=new THREE.MeshStandardMaterial({
+    color:0x140C06,roughness:.97,metalness:.01
+  });
+  const etnaMesh=new THREE.Mesh(etnaGeo,etnaMat);
+  etnaMesh.rotation.x=-Math.PI/2;
+  etnaMesh.position.set(EX,EY,EZ+EH*.5);
+  etnaMesh.castShadow=true;
+
+  // Snow cap
+  const snowMesh=new THREE.Mesh(
+    new THREE.ConeGeometry(.08,.12,16),
+    new THREE.MeshStandardMaterial({color:0xF2EEE8,roughness:.9,metalness:0})
+  );
+  snowMesh.rotation.x=-Math.PI/2;
+  snowMesh.position.set(EX,EY,EZ+EH+.02);
+
+  // Lava glow crater
+  const craterMat=new THREE.MeshBasicMaterial({color:0xFF3300,transparent:true,opacity:.75,side:THREE.DoubleSide});
+  const crater=new THREE.Mesh(new THREE.RingGeometry(.055,.095,24),craterMat);
+  crater.position.set(EX,EY,EZ+EH+.015);
+
+  // Outer pulse ring
+  const pulseRing=new THREE.Mesh(
+    new THREE.RingGeometry(.10,.16,28),
+    new THREE.MeshBasicMaterial({color:0xFF4400,transparent:true,opacity:.4,side:THREE.DoubleSide})
+  );
+  pulseRing.position.set(EX,EY,EZ+EH+.018);
+
+  // Etna point light
+  const etnaLight=new THREE.PointLight(0xFF2200,5.5,7);
+  etnaLight.position.set(EX,EY,EZ+EH+.1);
+
+  // Smoke particles
+  const SCNT=30;const sp=new Float32Array(SCNT*3);const sv=[];
+  for(let i=0;i<SCNT;i++){
+    sp[i*3]=EX+(Math.random()-.5)*.05;sp[i*3+1]=EY+(Math.random()-.5)*.05;sp[i*3+2]=EZ+EH+Math.random()*.5;
+    sv.push({vx:(Math.random()-.5)*.004,vy:(Math.random()-.5)*.004,vz:.007+Math.random()*.008,life:Math.random()});
+  }
+  const smokeGeo=new THREE.BufferGeometry();smokeGeo.setAttribute('position',new THREE.BufferAttribute(sp,3));
+  const smokeMat=new THREE.PointsMaterial({color:0xCCBBAA,size:.05,transparent:true,opacity:.28,depthWrite:false});
+  const smoke=new THREE.Points(smokeGeo,smokeMat);
+
+  /* ── SMALLER VOLCANIC CONES (secondary craters around Etna) ── */
+  function miniCone(x,y,h,r){
+    const m=new THREE.Mesh(
+      new THREE.ConeGeometry(r,h,10),
+      new THREE.MeshStandardMaterial({color:0x1A0E06,roughness:.97})
+    );m.rotation.x=-Math.PI/2;m.position.set(x,y,EZ+h*.5+.01);return m;
+  }
+  const c1=miniCone(1.25,.08,.22,.12);
+  const c2=miniCone(1.18,.32,.18,.10);
+  const c3=miniCone(1.48,.28,.15,.08);
+
+  /* ── AEOLIAN ISLANDS (north of Sicily) ── */
+  function mkIsl(x,y,sz,col=0x6A5838){
+    const m=new THREE.Mesh(
+      new THREE.SphereGeometry(sz,10,10,0,Math.PI*2,0,Math.PI*.6),
+      new THREE.MeshStandardMaterial({color:col,roughness:.88})
+    );m.rotation.x=Math.PI/2;m.position.set(x,y,.03);m.castShadow=true;return m;
+  }
+  const aeolian=[
+    mkIsl(1.18,1.20,.062,0x6A5838),  // Vulcano
+    mkIsl(1.05,1.38,.092,0x7A6040),  // Lipari (largest)
+    mkIsl(.82,1.42,.068,0x6E5C38),   // Salina
+    mkIsl(1.44,1.60,.056,0x7A3018),  // Stromboli (reddish-active)
+    mkIsl(.58,1.45,.044,0x6A5838),   // Filicudi
+    mkIsl(.34,1.50,.038,0x645430),   // Alicudi
+  ];
+  const ustica=mkIsl(-.95,1.60,.052,0x6A5838);
+  const pantelleria=mkIsl(-2.35,-.78,.075,0x786040);
+  const lampedusa=mkIsl(-.65,-1.60,.045,0x988060); // Lampedusa (far south)
+
+  /* ── STROMBOLI small active cone ── */
+  const strombCone=new THREE.Mesh(
+    new THREE.ConeGeometry(.032,.12,10),
+    new THREE.MeshStandardMaterial({color:0x200A02,roughness:.97})
+  );
+  strombCone.rotation.x=-Math.PI/2;strombCone.position.set(1.44,1.60,.12);
+  const strombLight=new THREE.PointLight(0xFF4400,1.2,1.5);
+  strombLight.position.set(1.44,1.60,.18);
+
+  /* ── OCEAN with realistic Mediterranean color ── */
+  const oceGeo=new THREE.PlaneGeometry(32,32,56,56);
+  const ocePos=oceGeo.attributes.position;
+  const oceW=[];
+  for(let i=0;i<ocePos.count;i++){oceW.push({x:ocePos.getX(i),y:ocePos.getY(i),p:Math.random()*Math.PI*2,s:.4+Math.random()*.6});}
+
+  // Multi-layer ocean material for depth
+  const oceMat=new THREE.MeshPhongMaterial({
+    color:0x062040,specular:0x1A5080,shininess:160,
+    transparent:true,opacity:.92
+  });
+  const ocean=new THREE.Mesh(oceGeo,oceMat);ocean.position.z=-.58;
+
+  // Shallow coastal lighter areas
+  const shallowGeo=new THREE.PlaneGeometry(30,30,1,1);
+  const shallowMat=new THREE.MeshBasicMaterial({color:0x0A3860,transparent:true,opacity:.3,depthWrite:false});
+  const shallow=new THREE.Mesh(shallowGeo,shallowMat);shallow.position.z=-.56;
+
+  /* ── OCEAN GRID (lat/lon lines) ── */
+  const gPts=[];
+  for(let i=-15;i<=15;i+=1.5){gPts.push(i,-15,-.55,i,15,-.55);}
+  for(let j=-15;j<=15;j+=1.5){gPts.push(-15,j,-.55,15,j,-.55);}
+  const gridGeo=new THREE.BufferGeometry();
+  gridGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(gPts),3));
+  const gridLines=new THREE.LineSegments(gridGeo,new THREE.LineBasicMaterial({color:0x0D3560,transparent:true,opacity:.2}));
+
+  /* ── STAR FIELD ── */
+  const starPos=new Float32Array(2400);
+  for(let i=0;i<2400;i+=3){starPos[i]=(Math.random()-.5)*50;starPos[i+1]=(Math.random()-.5)*50;starPos[i+2]=(Math.random()-.5)*50;}
+  const starGeo=new THREE.BufferGeometry();starGeo.setAttribute('position',new THREE.BufferAttribute(starPos,3));
+  scene.add(new THREE.Points(starGeo,new THREE.PointsMaterial({color:0xCCB870,size:.042,transparent:true,opacity:.52})));
+
+  /* ── ATMOSPHERIC DUST ── */
+  const dustPos=new Float32Array(480);
+  for(let i=0;i<480;i+=3){dustPos[i]=(Math.random()-.5)*10;dustPos[i+1]=(Math.random()-.5)*8;dustPos[i+2]=(Math.random()-.5)*6;}
+  const dustGeo=new THREE.BufferGeometry();dustGeo.setAttribute('position',new THREE.BufferAttribute(dustPos,3));
+  const dust=new THREE.Points(dustGeo,new THREE.PointsMaterial({color:0xC8A96E,size:.012,transparent:true,opacity:.22,depthWrite:false}));
+
+  /* ── CITY MARKERS ── */
+  function mkCity(x,y,col,r=.068,glow=.45){
+    const g=new THREE.Group();
+    // Sphere marker
+    const ball=new THREE.Mesh(
+      new THREE.SphereGeometry(r,12,12),
+      new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:glow,roughness:.15,metalness:.4})
+    );ball.position.set(x,y,.40);ball.castShadow=true;g.add(ball);
+    // Thin pole
+    const pole=new THREE.Mesh(
+      new THREE.CylinderGeometry(.006,.006,.22,6),
+      new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.45})
+    );pole.position.set(x,y,.28);g.add(pole);
+    // Glow ring at base
+    const baseRing=new THREE.Mesh(
+      new THREE.RingGeometry(r+.01,r+.04,16),
+      new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.25,side:THREE.DoubleSide})
+    );baseRing.position.set(x,y,.32);g.add(baseRing);
+    return g;
+  }
+  const palermo   = mkCity(-.75, .81, 0xC8A96E, .065, .38);
+  const catania   = mkCity(1.58, -.22, 0xFFD060, .080, .55); // Catania highlighted
+  const siracusa  = mkCity(1.52, -.70, 0xC8A96E, .055, .32);
+  const agrigento = mkCity(-.20, -.50, 0xC8A96E, .055, .32);
+  const taormina  = mkCity(1.80,  .40, 0xD4B870, .060, .36);
+  const trapani   = mkCity(-1.52, .80, 0xC8A96E, .052, .30);
+  const messina   = mkCity(2.08,  .88, 0xC8A96E, .058, .34);
+
+  /* ── SCENE GROUPS ── */
+  const viewG=new THREE.Group();
+  viewG.rotation.x=-0.30;
+  scene.add(viewG);
+
+  const islandG=new THREE.Group();
+  viewG.add(islandG);
+
+  islandG.add(island,glowMesh);
+  islandG.add(etnaMesh,snowMesh,crater,pulseRing,etnaLight,smoke);
+  islandG.add(c1,c2,c3);
+  islandG.add(palermo,catania,siracusa,agrigento,taormina,trapani,messina);
+  aeolian.forEach(a=>islandG.add(a));
+  islandG.add(ustica,pantelleria,lampedusa,strombCone,strombLight);
+  scene.add(ocean,shallow,gridLines,dust);
+
+  /* ── MOUSE DRAG ── */
+  let mmx=0,mmy=0,dragging=false,lastX=0,manualY=0;
+  canvas.addEventListener('mousedown',e=>{dragging=true;lastX=e.clientX;});
+  canvas.addEventListener('mousemove',e=>{
+    mmx=(e.clientX/innerWidth-.5)*2;mmy=(e.clientY/innerHeight-.5)*2;
+    if(dragging){manualY+=(e.clientX-lastX)/innerWidth*.55;manualY=Math.max(-.32,Math.min(.32,manualY));lastX=e.clientX;}
+  });
+  window.addEventListener('mouseup',()=>{dragging=false;});
+
+  /* ── ANIMATE — oscillate ±10° ── */
+  const MAX=10*Math.PI/180;
+  let t=0;
+  function anim(){
+    requestAnimationFrame(anim);t+=.010;
+
+    // Pendulum ±10° + manual drag offset
+    islandG.rotation.y=Math.sin(t*.36)*MAX+manualY*.5;
+
+    // Camera/view mouse tilt
+    viewG.rotation.x+=(-.30+mmy*.05-viewG.rotation.x)*.04;
+    viewG.rotation.z+=(mmx*.022-viewG.rotation.z)*.04;
+
+    // Etna pulse
+    const ps=1+Math.sin(t*2.8)*.2;pulseRing.scale.set(ps,ps,1);
+    pulseRing.material.opacity=.38+Math.sin(t*2.8)*.22;
+    crater.material.opacity=.70+Math.sin(t*3.5)*.14;
+    etnaLight.intensity=4.8+Math.sin(t*2.2)*1.5;
+
+    // Stromboli pulse (smaller)
+    strombLight.intensity=.8+Math.sin(t*3.8+1.2)*.5;
+
+    // Smoke
+    const sPos=smokeGeo.attributes.position;
+    for(let i=0;i<SCNT;i++){sv[i].life+=.007;if(sv[i].life>1){sv[i].life=0;sp[i*3]=EX+(Math.random()-.5)*.05;sp[i*3+1]=EY+(Math.random()-.5)*.05;sp[i*3+2]=EZ+EH;}sp[i*3]+=sv[i].vx;sp[i*3+1]+=sv[i].vy;sp[i*3+2]+=sv[i].vz;}
+    sPos.needsUpdate=true;smokeMat.opacity=.26+Math.sin(t*1.4)*.07;
+
+    // Ocean waves
+    for(let i=0;i<ocePos.count;i++){const w=oceW[i];ocePos.setZ(i,Math.sin(w.x*.52+t*.36)*w.s*.05+Math.cos(w.y*.48+t*.3)*w.s*.04);}
+    ocePos.needsUpdate=true;oceGeo.computeVertexNormals();
+
+    // Atmospheric shimmer
+    dust.rotation.y+=.0006;
+    camera.position.y=1.1+Math.sin(t*.22)*.04;
+
+    renderer.render(scene,camera);
+  }
+  anim();
+
+  window.addEventListener('resize',()=>{
+    const W2=innerWidth,H2=innerHeight;camera.aspect=W2/H2;camera.updateProjectionMatrix();renderer.setSize(W2,H2);
+  });
+}
+chrome();
+})();
+</script>
+</body>
+</html>
